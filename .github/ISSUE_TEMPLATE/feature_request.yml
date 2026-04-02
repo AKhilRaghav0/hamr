@@ -1,0 +1,71 @@
+name: Feature Request
+description: Suggest something new or an improvement to something existing.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Got an idea? We'd love to hear it. The more context you give about your use case, the better we can design the solution.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What do you want?
+      description: Describe the feature or improvement. Be as specific as you can.
+      placeholder: "I want a middleware that tracks call metrics and exposes them as Prometheus metrics..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why do you need it?
+      description: What problem does this solve? What's your use case?
+      placeholder: "I'm running hamr in production and need to monitor tool call rates and latencies in our existing Grafana dashboards."
+    validations:
+      required: true
+
+  - type: textarea
+    id: api
+    attributes:
+      label: What would the API look like?
+      description: If you have thoughts on how this should work from a developer's perspective, sketch it out. Even rough pseudocode helps.
+      placeholder: |
+        ```go
+        s.Use(middleware.Metrics(middleware.MetricsConfig{
+            Endpoint: "/metrics",
+            Prefix:   "hamr_",
+        }))
+        ```
+      render: go
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of hamr?
+      options:
+        - "Core API"
+        - "Schema generation"
+        - "Middleware"
+        - "Transport"
+        - "Toolbox"
+        - "TUI Dashboard"
+        - "CLI"
+        - "Testing"
+        - "Documentation"
+        - "New package / other"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: willingness
+    attributes:
+      label: Would you be willing to contribute this?
+      options:
+        - "Yes, I'd like to submit a PR"
+        - "I could help with guidance"
+        - "No, just suggesting"
+    validations:
+      required: false

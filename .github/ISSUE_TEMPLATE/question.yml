@@ -1,0 +1,24 @@
+name: Question
+description: Ask a question about using hamr.
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question? Ask away. Check the [wiki](https://github.com/akhilraghav/hamr/wiki) first in case it's already covered there.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: What's your question?
+      placeholder: "How do I pass authentication tokens from the MCP client to my tool handlers?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What are you building? What have you tried? Any relevant code?
+    validations:
+      required: false

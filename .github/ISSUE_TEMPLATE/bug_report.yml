@@ -1,0 +1,93 @@
+name: Bug Report
+description: Something isn't working the way it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. The more detail you can give, the faster we can fix it.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Tell us what went wrong. If you got an error message, paste it here.
+      placeholder: "I tried to register a tool with a nested struct input, and the server panicked on startup..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      description: What should have happened instead?
+      placeholder: "The tool should register successfully and generate a schema with nested object properties."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: Minimal code or steps to trigger the bug. This is the single most helpful thing you can provide.
+      placeholder: |
+        ```go
+        type Inner struct {
+            Value string `json:"value"`
+        }
+        type Input struct {
+            Data Inner `json:"data"`
+        }
+        s := hamr.New("test", "1.0.0")
+        s.Tool("test", "test tool", func(ctx context.Context, in Input) (string, error) {
+            return "", nil
+        })
+        ```
+      render: go
+    validations:
+      required: false
+
+  - type: input
+    id: hamr-version
+    attributes:
+      label: hamr version
+      description: "Run `go list -m github.com/akhilraghav/hamr` or check your go.mod."
+      placeholder: "v0.1.0"
+    validations:
+      required: false
+
+  - type: input
+    id: go-version
+    attributes:
+      label: Go version
+      description: "Output of `go version`."
+      placeholder: "go1.22.0 darwin/arm64"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of hamr?
+      description: If you know which package is involved, pick it here.
+      options:
+        - "Core (hamr.go, handler, server)"
+        - "Schema generation"
+        - "Validation"
+        - "Middleware"
+        - "Transport (stdio/SSE)"
+        - "Toolbox"
+        - "TUI Dashboard"
+        - "CLI (init/validate/dev)"
+        - "Testing (hamrtest)"
+        - "Not sure"
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else?
+      description: Logs, screenshots, MCP client you're using (Claude Desktop, Cursor, etc.), whatever might help.
+    validations:
+      required: false
