@@ -78,6 +78,12 @@ We built a [Kubernetes MCP server](examples/k8s-mcp) that lets Claude check pod 
 
 The raw version is in [examples/k8s-mcp-raw](examples/k8s-mcp-raw) if you want to see for yourself. The business logic (the kubectl calls) is identical in both. The difference is purely the plumbing that hamr eliminates.
 
+### It saves tokens too
+
+This matters if you're using an AI to generate MCP servers (and you probably are). A 4-tool notes server is 145 lines with hamr vs 356 lines without. That's 60% fewer tokens for the AI to generate, and 60% fewer tokens for you to review. The struct-tag-as-schema approach means the AI doesn't have to generate JSON Schema by hand — it just writes a normal Go struct and the schema exists automatically. Less code generated = fewer mistakes = less back-and-forth.
+
+For teams building lots of MCP integrations, this adds up fast.
+
 ## Getting started
 
 Install the CLI:
