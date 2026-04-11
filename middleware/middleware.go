@@ -11,7 +11,7 @@ import "context"
 // HandlerFunc is the function signature used throughout the middleware chain.
 // toolName is the registered MCP tool name, and args is the decoded argument
 // map after default injection and schema validation. The return value is the
-// raw handler result (string, []mcpx.Content, or mcpx.Result).
+// raw handler result (string, []hamr.Content, or hamr.Result).
 type HandlerFunc func(ctx context.Context, toolName string, args map[string]any) (any, error)
 
 // Middleware is a function that wraps a HandlerFunc and returns a new

@@ -30,7 +30,7 @@ MCP Client (Claude Desktop, Cursor, web app, ...)
               │  prompts/...   │                      │
               │  resources/... │                      ▼
               └────────────────┘           ┌──────────────────┐
-                                           │  mcpx.go         │
+                                           │  hamr.go         │
                                            │  invokeTool()    │
                                            │  ─────────────   │
                                            │  1. parse JSON   │
@@ -67,7 +67,7 @@ The raw JSON is decoded into a `transport.JSONRPCRequest`. If there is an `id` f
 - `tools/call` — extracts tool name and arguments, calls `s.invokeTool()`
 - Anything else — returns a JSON-RPC method-not-found error
 
-**4. invokeTool in mcpx.go**
+**4. invokeTool in hamr.go**
 
 This is where the real work happens:
 
@@ -121,7 +121,7 @@ The result travels back up: `callToolHandler` returns to `invokeTool`, which con
 | `middleware/` | Middleware type, built-in middleware implementations |
 | `tui/` | Bubbletea TUI dashboard model |
 | `toolbox/` | Pre-built tool collections |
-| `mcpxtest/` | Test client and assertion helpers |
+| `hamrtest/` | Test client and assertion helpers |
 | `cmd/mcpx/` | CLI (init, validate, dev, version) |
 
 ## The reflect-based handler invocation system

@@ -32,7 +32,7 @@ type GreetInput struct {
 
 // Greet handles the greet tool invocation.
 func Greet(ctx context.Context, input GreetInput) (string, error) {
-	return fmt.Sprintf("%s, %s! Welcome to mcpx.", input.Greeting, input.Name), nil
+	return fmt.Sprintf("%s, %s! Welcome to hamr.", input.Greeting, input.Name), nil
 }
 
 // ReverseInput defines input for the reverse tool.
@@ -61,7 +61,7 @@ func WordCount(ctx context.Context, input WordCountInput) (string, error) {
 }
 
 func main() {
-	s := mcpx.New("demo-server", "1.0.0")
+	s := hamr.New("demo-server", "1.0.0")
 
 	s.Tool("search", "Search for information", Search)
 	s.Tool("greet", "Greet a person by name", Greet)

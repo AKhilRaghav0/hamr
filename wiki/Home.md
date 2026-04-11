@@ -1,6 +1,6 @@
 # hamr Wiki
 
-Welcome to the mcpx wiki. This is the full documentation for building MCP servers with mcpx.
+Welcome to the mcpx wiki. This is the full documentation for building MCP servers with hamr.
 
 If you're new here, start with the Getting Started guide and work through the pages in order. If you already know what you're looking for, jump to the relevant section.
 
@@ -8,7 +8,7 @@ If you're new here, start with the Getting Started guide and work through the pa
 
 1. **[Getting Started](Getting-Started)** — Install mcpx, scaffold your first project, and connect it to Claude Desktop in under 5 minutes.
 
-2. **[Tools](Tools)** — How to define tools, write handlers, and understand the schema generation system. This is the core of mcpx.
+2. **[Tools](Tools)** — How to define tools, write handlers, and understand the schema generation system. This is the core of hamr.
 
 3. **[Middleware](Middleware)** — How the middleware system works, what's built in, and how to write your own.
 

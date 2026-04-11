@@ -28,7 +28,7 @@ This is the standard onion model.
 Applied to every tool:
 
 ```go
-s := mcpx.New("server", "1.0.0")
+s := hamr.New("server", "1.0.0")
 s.Use(
     middleware.Logger(),
     middleware.Recovery(),

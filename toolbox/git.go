@@ -23,9 +23,9 @@ func Git(repoPath string) *GitTools {
 	return &GitTools{repoPath: repoPath}
 }
 
-// Tools implements mcpx.ToolCollection.
-func (g *GitTools) Tools() []mcpx.ToolInfo {
-	return []mcpx.ToolInfo{
+// Tools implements hamr.ToolCollection.
+func (g *GitTools) Tools() []hamr.ToolInfo {
+	return []hamr.ToolInfo{
 		{
 			Name:        "git_status",
 			Description: "Show the working tree status of the repository (equivalent to git status).",

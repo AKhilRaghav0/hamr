@@ -48,9 +48,9 @@ func FileSystem(root string) *FileSystemTools {
 	return &FileSystemTools{root: realRoot}
 }
 
-// Tools implements mcpx.ToolCollection.
-func (f *FileSystemTools) Tools() []mcpx.ToolInfo {
-	return []mcpx.ToolInfo{
+// Tools implements hamr.ToolCollection.
+func (f *FileSystemTools) Tools() []hamr.ToolInfo {
+	return []hamr.ToolInfo{
 		{
 			Name:        "read_file",
 			Description: "Read the contents of a file within the sandbox. Returns the raw text content.",

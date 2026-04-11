@@ -43,7 +43,7 @@ jobs:
           go-version: '1.24'
 
       - name: Run tests with coverage
-        run: go test -coverprofile=coverage.out -covermode=atomic $(go list ./... | grep -v -E '/examples/|/cmd/|/mcpxtest|/tui')
+        run: go test -coverprofile=coverage.out -covermode=atomic $(go list ./... | grep -v -E '/examples/|/cmd/|/hamrtest|/tui')
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4

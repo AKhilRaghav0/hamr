@@ -1,4 +1,4 @@
-// Example middleware demonstrates all middleware features available in mcpx.
+// Example middleware demonstrates all middleware features available in hamr.
 //
 // It registers three tools and applies:
 //   - Global middleware: Logger, Recovery, RateLimit, Timeout
@@ -68,7 +68,7 @@ func handleRisky(_ context.Context, in RiskyInput) (string, error) {
 // ---- main -------------------------------------------------------------------
 
 func main() {
-	s := mcpx.New("middleware-demo", "1.0.0")
+	s := hamr.New("middleware-demo", "1.0.0")
 
 	// ---- global middleware ----
 	// Applied to every tool call, outermost-first.

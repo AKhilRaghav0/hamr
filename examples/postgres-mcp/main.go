@@ -254,8 +254,8 @@ func main() {
 		log.Fatalf("Failed to ping database: %v", err)
 	}
 
-	s := mcpx.New("postgres-mcp", "1.0.0",
-		mcpx.WithDescription("Query your PostgreSQL database with Claude"),
+	s := hamr.New("postgres-mcp", "1.0.0",
+		hamr.WithDescription("Query your PostgreSQL database with Claude"),
 	)
 
 	s.Use(

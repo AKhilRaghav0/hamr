@@ -1,4 +1,4 @@
-// Package mcpxtest provides testing utilities for mcpx servers.
+// Package hamrtest provides testing utilities for mcpx servers.
 //
 // The central type is Client, an in-process MCP client that sends JSON-RPC
 // requests directly to a transport.Handler (obtained from Server.NewTestHandler)
@@ -8,13 +8,13 @@
 // Typical usage:
 //
 //	func TestMyTool(t *testing.T) {
-//	    s := mcpx.New("srv", "1.0")
+//	    s := hamr.New("srv", "1.0")
 //	    s.Tool("greet", "Greet a user", myGreetHandler)
-//	    client := mcpxtest.NewClient(t, s.NewTestHandler())
+//	    client := hamrtest.NewClient(t, s.NewTestHandler())
 //	    result, err := client.CallTool("greet", map[string]any{"name": "Alice"})
 //	    // assert on result and err ...
 //	}
-package mcpxtest
+package hamrtest
 
 import (
 	"bytes"
@@ -94,7 +94,7 @@ func (c *Client) Initialize() map[string]any {
 		"protocolVersion": "2024-11-05",
 		"capabilities":    map[string]any{},
 		"clientInfo": map[string]any{
-			"name":    "mcpxtest",
+			"name":    "hamrtest",
 			"version": "1.0.0",
 		},
 	})

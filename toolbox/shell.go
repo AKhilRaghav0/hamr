@@ -65,9 +65,9 @@ func Shell(workDir string, opts ...ShellOption) *ShellTools {
 	return &ShellTools{workDir: workDir, cfg: cfg}
 }
 
-// Tools implements mcpx.ToolCollection.
-func (s *ShellTools) Tools() []mcpx.ToolInfo {
-	return []mcpx.ToolInfo{
+// Tools implements hamr.ToolCollection.
+func (s *ShellTools) Tools() []hamr.ToolInfo {
+	return []hamr.ToolInfo{
 		{
 			Name:        "run_command",
 			Description: "Execute a shell command in the configured working directory. Returns combined stdout and stderr.",

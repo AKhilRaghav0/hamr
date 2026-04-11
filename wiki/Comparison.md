@@ -1,6 +1,6 @@
 # Comparison
 
-This page shows what mcpx actually saves you compared to building an MCP server by hand, and covers the cases where you might not need mcpx.
+This page shows what mcpx actually saves you compared to building an MCP server by hand, and covers the cases where you might not need hamr.
 
 ## The same tool, two ways
 
@@ -101,7 +101,7 @@ The raw k8s-mcp server (with 3 tools, no middleware, no testing) vs the hamr ver
 | Validation | Manual per-tool | Automatic |
 | Default injection | Manual per-tool | Automatic |
 | Middleware | None | Built-in |
-| Testing | None | mcpxtest |
+| Testing | None | hamrtest |
 | Panic recovery | None | middleware.Recovery() |
 | SSE transport | Not present | s.RunSSE() |
 | Dashboard | Not present | s.RunSSEWithDashboard() |
@@ -124,7 +124,7 @@ The raw k8s-mcp server (with 3 tools, no middleware, no testing) vs the hamr ver
 | Rate limiting | Not present | `middleware.RateLimit(10)` |
 | Timeout middleware | Not present | `middleware.Timeout(30*time.Second)` |
 | Cache middleware | Not present | `middleware.Cache(5*time.Minute)` |
-| Test client | Not present | `mcpxtest.NewClient()` |
+| Test client | Not present | `hamrtest.NewClient()` |
 | TUI dashboard | Not present | `s.RunSSEWithDashboard()` |
 | Pre-built tools | Not present | `toolbox.*` |
 | Project scaffolding | Not present | `hamr init` |
@@ -143,7 +143,7 @@ The raw k8s-mcp server (with 3 tools, no middleware, no testing) vs the hamr ver
 
 **Error handling.** Panics in tool handlers crash the entire server process without recovery middleware. Every error path needs to be wrapped in the right JSON-RPC error shape. mcpx handles all of this.
 
-**Testing infrastructure.** Without mcpx you test your server by either spawning it as a subprocess or manually constructing JSON-RPC messages and parsing the responses. Neither is pleasant. `mcpxtest` gives you a real test client that calls through your actual handler logic in-memory.
+**Testing infrastructure.** Without mcpx you test your server by either spawning it as a subprocess or manually constructing JSON-RPC messages and parsing the responses. Neither is pleasant. `hamrtest` gives you a real test client that calls through your actual handler logic in-memory.
 
 ## When you might not need mcpx
 

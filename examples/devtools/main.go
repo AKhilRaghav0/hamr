@@ -1,4 +1,4 @@
-// devtools is a real, practical MCP server built with mcpx.
+// devtools is a real, practical MCP server built with hamr.
 // It provides developer productivity tools for use with Claude Desktop, Cursor, etc.
 //
 // Install:
@@ -259,8 +259,8 @@ func runGit(dir string, args ...string) (string, error) {
 }
 
 func main() {
-	s := mcpx.New("devtools", "1.0.0",
-		mcpx.WithDescription("Developer productivity tools — files, git, shell, code search"),
+	s := hamr.New("devtools", "1.0.0",
+		hamr.WithDescription("Developer productivity tools — files, git, shell, code search"),
 	)
 
 	s.Use(

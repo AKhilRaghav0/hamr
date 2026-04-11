@@ -66,7 +66,7 @@ func Greet(ctx context.Context, input GreetInput) (string, error) {
 }
 
 func main() {
-    s := mcpx.New("my-server", "1.0.0")
+    s := hamr.New("my-server", "1.0.0")
     s.Tool("greet", "Greet someone by name", Greet)
     log.Fatal(s.Run())
 }

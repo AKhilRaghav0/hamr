@@ -22,7 +22,7 @@ As of early 2026, the main ones are:
 - **Continue** — an open-source VS Code/JetBrains extension
 - **MCP Inspector** — a debugging and testing tool from Anthropic
 
-The MCP spec is open and the ecosystem is growing. Any client that implements the protocol can connect to any compliant server, including one built with mcpx.
+The MCP spec is open and the ecosystem is growing. Any client that implements the protocol can connect to any compliant server, including one built with hamr.
 
 ---
 
@@ -40,7 +40,7 @@ Or send raw JSON-RPC messages yourself:
 echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | ./my-server
 ```
 
-The `mcpxtest` package is designed for testing without any client at all — see the [Testing](Testing) page.
+The `hamrtest` package is designed for testing without any client at all — see the [Testing](Testing) page.
 
 ---
 
@@ -74,7 +74,7 @@ func main() {
     db, err := sql.Open("postgres", dbURL)
     // ...
 
-    s := mcpx.New("my-server", "1.0.0")
+    s := hamr.New("my-server", "1.0.0")
     s.AddTools(toolbox.Database(db))
     log.Fatal(s.Run())
 }
@@ -135,7 +135,7 @@ s.Prompt(
 )
 ```
 
-Resources and prompts are exposed through the standard MCP protocol methods (`resources/list`, `resources/read`, `prompts/list`, `prompts/get`). The `mcpxtest.Client` has `ListResources()` and `ListPrompts()` for testing them.
+Resources and prompts are exposed through the standard MCP protocol methods (`resources/list`, `resources/read`, `prompts/list`, `prompts/get`). The `hamrtest.Client` has `ListResources()` and `ListPrompts()` for testing them.
 
 ---
 
@@ -208,7 +208,7 @@ Yes. The MCP protocol is language-agnostic. An mcpx server speaks standard MCP o
 
 A few approaches, depending on the problem:
 
-**Use mcpxtest for unit testing.** Write tests that call your tools directly. This is the fastest feedback loop and catches most issues before you ever connect a client. See the [Testing](Testing) page.
+**Use hamrtest for unit testing.** Write tests that call your tools directly. This is the fastest feedback loop and catches most issues before you ever connect a client. See the [Testing](Testing) page.
 
 **Use the MCP Inspector.** It is a visual debugging UI that lets you call tools manually and see the raw JSON:
 

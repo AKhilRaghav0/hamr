@@ -7,21 +7,21 @@ mcpx has a built-in test package that lets you write proper Go tests for your MC
 You need two things to write tests:
 
 1. `s.NewTestHandler()` — gets a `transport.Handler` from your server
-2. `mcpxtest.NewClient()` — wraps that handler in a test client
+2. `hamrtest.NewClient()` — wraps that handler in a test client
 
 ```go
 import (
     "testing"
 
     "github.com/AKhilRaghav0/hamr"
-    "github.com/AKhilRaghav0/hamr/mcpxtest"
+    "github.com/AKhilRaghav0/hamr/hamrtest"
 )
 
 func TestMyTool(t *testing.T) {
-    s := mcpx.New("test-server", "1.0.0")
+    s := hamr.New("test-server", "1.0.0")
     s.Tool("greet", "Greet someone", Greet)
 
-    client := mcpxtest.NewClient(t, s.NewTestHandler())
+    client := hamrtest.NewClient(t, s.NewTestHandler())
 
     result, err := client.CallTool("greet", map[string]any{
         "name": "Alice",
@@ -81,14 +81,14 @@ This is useful for verifying that your server exposes the tools it should.
 
 ## Helper assertions
 
-The `mcpxtest` package provides two assertion helpers:
+The `hamrtest` package provides two assertion helpers:
 
 ```go
 // Assert a tool with this name exists
-mcpxtest.AssertToolExists(t, client, "search")
+hamrtest.AssertToolExists(t, client, "search")
 
 // Assert exactly n tools are registered
-mcpxtest.AssertToolCount(t, client, 3)
+hamrtest.AssertToolCount(t, client, 3)
 ```
 
 Both call `t.Error` rather than `t.Fatal`, so you get all failures in one test run instead of stopping at the first.
@@ -99,7 +99,7 @@ Validation failures come back as tool results with `IsError == true`. They do no
 
 ```go
 func TestMissingRequiredField(t *testing.T) {
-    client := mcpxtest.NewClient(t, newServer().NewTestHandler())
+    client := hamrtest.NewClient(t, newServer().NewTestHandler())
 
     // Omit a required field
     result, err := client.CallTool("search", map[string]any{})
@@ -118,7 +118,7 @@ func TestMissingRequiredField(t *testing.T) {
 }
 
 func TestEnumViolation(t *testing.T) {
-    client := mcpxtest.NewClient(t, newServer().NewTestHandler())
+    client := hamrtest.NewClient(t, newServer().NewTestHandler())
 
     result, err := client.CallTool("search", map[string]any{
         "query":  "test",
@@ -133,7 +133,7 @@ func TestEnumViolation(t *testing.T) {
 }
 
 func TestWrongType(t *testing.T) {
-    client := mcpxtest.NewClient(t, newServer().NewTestHandler())
+    client := hamrtest.NewClient(t, newServer().NewTestHandler())
 
     result, err := client.CallTool("search", map[string]any{
         "query":       42,    // should be string
@@ -154,7 +154,7 @@ mcpx applies default values before calling your handler. You can test this by om
 
 ```go
 func TestDefaultsApplied(t *testing.T) {
-    client := mcpxtest.NewClient(t, newServer().NewTestHandler())
+    client := hamrtest.NewClient(t, newServer().NewTestHandler())
 
     // Only pass required field; max_results should default to 10
     result, err := client.CallTool("search", map[string]any{
@@ -176,8 +176,8 @@ func TestDefaultsApplied(t *testing.T) {
 Middleware runs normally in tests. If you have global middleware on your server, it runs on every test call. This is usually what you want.
 
 ```go
-func newServer() *mcpx.Server {
-    s := mcpx.New("test-server", "1.0.0")
+func newServer() *hamr.Server {
+    s := hamr.New("test-server", "1.0.0")
     s.Use(middleware.Recovery())  // runs in tests too
     s.Tool("greet", "Greet someone", Greet)
     return s
@@ -187,8 +187,8 @@ func newServer() *mcpx.Server {
 If you want to test your server without specific middleware, create a separate server instance without it:
 
 ```go
-func newServerNoMiddleware() *mcpx.Server {
-    s := mcpx.New("test-server", "1.0.0")
+func newServerNoMiddleware() *hamr.Server {
+    s := hamr.New("test-server", "1.0.0")
     s.Tool("greet", "Greet someone", Greet)
     return s
 }
@@ -209,7 +209,7 @@ import (
     "testing"
 
     "github.com/AKhilRaghav0/hamr"
-    "github.com/AKhilRaghav0/hamr/mcpxtest"
+    "github.com/AKhilRaghav0/hamr/hamrtest"
 )
 
 type SearchInput struct {
@@ -221,14 +221,14 @@ func handleSearch(_ context.Context, in SearchInput) (string, error) {
     return fmt.Sprintf("results for %q (max=%d)", in.Query, in.MaxResults), nil
 }
 
-func newServer() *mcpx.Server {
-    s := mcpx.New("my-server", "1.0.0")
+func newServer() *hamr.Server {
+    s := hamr.New("my-server", "1.0.0")
     s.Tool("search", "Search for things", handleSearch)
     return s
 }
 
 func TestSearch(t *testing.T) {
-    client := mcpxtest.NewClient(t, newServer().NewTestHandler())
+    client := hamrtest.NewClient(t, newServer().NewTestHandler())
 
     result, err := client.CallTool("search", map[string]any{
         "query": "golang",
@@ -242,7 +242,7 @@ func TestSearch(t *testing.T) {
 }
 
 func TestSearchDefault(t *testing.T) {
-    client := mcpxtest.NewClient(t, newServer().NewTestHandler())
+    client := hamrtest.NewClient(t, newServer().NewTestHandler())
 
     result, err := client.CallTool("search", map[string]any{
         "query": "golang",
@@ -257,7 +257,7 @@ func TestSearchDefault(t *testing.T) {
 }
 
 func TestSearchMissingQuery(t *testing.T) {
-    client := mcpxtest.NewClient(t, newServer().NewTestHandler())
+    client := hamrtest.NewClient(t, newServer().NewTestHandler())
 
     result, err := client.CallTool("search", map[string]any{})
     if err != nil {
@@ -269,13 +269,13 @@ func TestSearchMissingQuery(t *testing.T) {
 }
 
 func TestToolsRegistered(t *testing.T) {
-    client := mcpxtest.NewClient(t, newServer().NewTestHandler())
-    mcpxtest.AssertToolExists(t, client, "search")
-    mcpxtest.AssertToolCount(t, client, 1)
+    client := hamrtest.NewClient(t, newServer().NewTestHandler())
+    hamrtest.AssertToolExists(t, client, "search")
+    hamrtest.AssertToolCount(t, client, 1)
 }
 
 func TestInitialize(t *testing.T) {
-    client := mcpxtest.NewClient(t, newServer().NewTestHandler())
+    client := hamrtest.NewClient(t, newServer().NewTestHandler())
     info := client.Initialize()
 
     serverInfo, ok := info["serverInfo"].(map[string]any)

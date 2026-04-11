@@ -1,4 +1,4 @@
-package mcpx
+package hamr
 
 import (
 	"fmt"

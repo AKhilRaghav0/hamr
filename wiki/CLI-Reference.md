@@ -78,7 +78,7 @@ hamr validate ./my-server  # check a specific directory
 
 - `go.mod` exists and declares the `github.com/AKhilRaghav0/hamr` dependency
 - At least one `.go` file is present
-- At least one `mcpx.New()` call is present
+- At least one `hamr.New()` call is present
 - At least one `.Tool()` call is present (warning if absent)
 - `s.Run()` or `s.RunSSE()` is called somewhere
 - Each `.Tool()` call that can be parsed statically has a non-empty name and description
@@ -92,7 +92,7 @@ Validating project at /path/to/my-server
   ✓  go.mod exists
   ✓  go.mod imports github.com/AKhilRaghav0/hamr
   ✓  found 3 .go source file(s)
-  ✓  mcpx.New() call found
+  ✓  hamr.New() call found
   ✓  3 s.Tool() call(s) found
   ✓  Tool "greet" has valid name and description
   ✓  Tool "search" has valid name and description

@@ -1,4 +1,4 @@
-package mcpx
+package hamr
 
 // Content represents an MCP content block returned by tools.
 // The Type field controls which other fields are meaningful:

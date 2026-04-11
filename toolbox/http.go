@@ -61,9 +61,9 @@ func HTTP(opts ...HTTPOption) *HTTPTools {
 	}
 }
 
-// Tools implements mcpx.ToolCollection.
-func (h *HTTPTools) Tools() []mcpx.ToolInfo {
-	return []mcpx.ToolInfo{
+// Tools implements hamr.ToolCollection.
+func (h *HTTPTools) Tools() []hamr.ToolInfo {
+	return []hamr.ToolInfo{
 		{
 			Name:        "http_get",
 			Description: "Send an HTTP GET request to a URL and return the response body.",

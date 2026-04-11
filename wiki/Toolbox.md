@@ -15,7 +15,7 @@ s.AddTools(toolbox.Database(db))
 You can mix toolbox collections with your own custom tools:
 
 ```go
-s := mcpx.New("dev-server", "1.0.0")
+s := hamr.New("dev-server", "1.0.0")
 s.AddTools(toolbox.FileSystem("/workspace"))
 s.AddTools(toolbox.Git("/workspace"))
 s.Tool("deploy", "Deploy the app", Deploy)  // your own tool

@@ -1,6 +1,6 @@
 # Tools
 
-Tools are the core of any MCP server. A tool is just a function that the AI can call. This page covers everything about defining tools in mcpx.
+Tools are the core of any MCP server. A tool is just a function that the AI can call. This page covers everything about defining tools in hamr.
 
 ## The basics
 
@@ -164,10 +164,10 @@ Handlers must follow one of these signatures:
 func(context.Context, InputStruct) (string, error)
 
 // Return multiple content blocks
-func(context.Context, InputStruct) ([]mcpx.Content, error)
+func(context.Context, InputStruct) ([]hamr.Content, error)
 
 // Return a structured result
-func(context.Context, InputStruct) (mcpx.Result, error)
+func(context.Context, InputStruct) (hamr.Result, error)
 ```
 
 The first form is the most common. The string becomes a text content block in the MCP response.
@@ -177,11 +177,11 @@ The first form is the most common. The string becomes a text content block in th
 When you need to return more than text — like images, or a mix of text and data:
 
 ```go
-func FetchImage(ctx context.Context, in Input) ([]mcpx.Content, error) {
+func FetchImage(ctx context.Context, in Input) ([]hamr.Content, error) {
     imageData := fetchAndEncode(in.URL)
-    return []mcpx.Content{
-        mcpx.TextContent("Here's the image you requested:"),
-        mcpx.ImageContent("image/png", imageData),
+    return []hamr.Content{
+        hamr.TextContent("Here's the image you requested:"),
+        hamr.ImageContent("image/png", imageData),
     }, nil
 }
 ```
@@ -200,15 +200,15 @@ func ReadFile(ctx context.Context, in Input) (string, error) {
 }
 ```
 
-If you want to return a "soft error" that the AI can see but that doesn't count as a protocol error, use `mcpx.ErrorResult`:
+If you want to return a "soft error" that the AI can see but that doesn't count as a protocol error, use `hamr.ErrorResult`:
 
 ```go
-func Risky(ctx context.Context, in Input) (mcpx.Result, error) {
+func Risky(ctx context.Context, in Input) (hamr.Result, error) {
     result, err := tryThing()
     if err != nil {
-        return mcpx.ErrorResult("it didn't work: " + err.Error()), nil
+        return hamr.ErrorResult("it didn't work: " + err.Error()), nil
     }
-    return mcpx.NewResult(mcpx.TextContent(result)), nil
+    return hamr.NewResult(hamr.TextContent(result)), nil
 }
 ```
 
@@ -217,7 +217,7 @@ func Risky(ctx context.Context, in Input) (mcpx.Result, error) {
 Register tools on the server:
 
 ```go
-s := mcpx.New("my-server", "1.0.0")
+s := hamr.New("my-server", "1.0.0")
 s.Tool("search", "Search for things", Search)
 s.Tool("read_file", "Read a file's contents", ReadFile)
 ```

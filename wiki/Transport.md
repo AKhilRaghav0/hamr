@@ -8,7 +8,7 @@ stdio is the default. When you call `s.Run()`, your server reads JSON-RPC messag
 
 ```go
 func main() {
-    s := mcpx.New("my-server", "1.0.0")
+    s := hamr.New("my-server", "1.0.0")
     s.Tool("greet", "Greet someone", Greet)
     log.Fatal(s.Run())
 }
@@ -24,7 +24,7 @@ SSE (Server-Sent Events) runs your server as an HTTP server. Clients connect via
 
 ```go
 func main() {
-    s := mcpx.New("my-server", "1.0.0")
+    s := hamr.New("my-server", "1.0.0")
     s.Tool("greet", "Greet someone", Greet)
     log.Fatal(s.RunSSE(":8080"))
 }
@@ -67,7 +67,7 @@ All three block until the server exits. All three handle graceful shutdown on SI
 
 ```go
 func main() {
-    s := mcpx.New("my-server", "1.0.0")
+    s := hamr.New("my-server", "1.0.0")
     s.Tool("search", "Search for things", Search)
     s.Tool("fetch", "Fetch a URL", Fetch)
 
@@ -124,7 +124,7 @@ If you need to do your own cleanup on shutdown, use a context that gets cancelle
 
 ```go
 func main() {
-    s := mcpx.New("my-server", "1.0.0")
+    s := hamr.New("my-server", "1.0.0")
     s.Tool("query", "Query the database", Query)
 
     // s.Run() returns when the process receives SIGINT or SIGTERM.

@@ -1,7 +1,7 @@
-// Package main demonstrates how to write tests for mcpx tools using mcpxtest.
+// Package main demonstrates how to write tests for mcpx tools using hamrtest.
 //
 // The test file lives alongside the server code (or in its own package) and uses
-// mcpxtest.NewClient to communicate with the server in-memory — no processes,
+// hamrtest.NewClient to communicate with the server in-memory — no processes,
 // no network, no test setup/teardown beyond standard testing.T.
 package main
 
@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/AKhilRaghav0/hamr"
-	"github.com/AKhilRaghav0/hamr/mcpxtest"
+	"github.com/AKhilRaghav0/hamr/hamrtest"
 )
 
 // ---- input types ------------------------------------------------------------
@@ -59,8 +59,8 @@ func handleFormat(_ context.Context, in FormatInput) (string, error) {
 
 // newServer builds a server with all tools registered. Tests call this to get
 // a fresh, isolated server instance per test (or share one via TestMain).
-func newServer() *mcpx.Server {
-	s := mcpx.New("test-demo-server", "1.0.0")
+func newServer() *hamr.Server {
+	s := hamr.New("test-demo-server", "1.0.0")
 	s.Tool("search", "Search for information", handleSearch)
 	s.Tool("calculate", "Evaluate a mathematical expression", handleCalculate)
 	s.Tool("format", "Format text with a chosen style", handleFormat)
@@ -71,22 +71,22 @@ func newServer() *mcpx.Server {
 
 // TestToolExists verifies that each registered tool appears in tools/list.
 func TestToolExists(t *testing.T) {
-	client := mcpxtest.NewClient(t, newServer().NewTestHandler())
+	client := hamrtest.NewClient(t, newServer().NewTestHandler())
 
-	mcpxtest.AssertToolExists(t, client, "search")
-	mcpxtest.AssertToolExists(t, client, "calculate")
-	mcpxtest.AssertToolExists(t, client, "format")
+	hamrtest.AssertToolExists(t, client, "search")
+	hamrtest.AssertToolExists(t, client, "calculate")
+	hamrtest.AssertToolExists(t, client, "format")
 }
 
 // TestToolCount verifies the exact number of registered tools.
 func TestToolCount(t *testing.T) {
-	client := mcpxtest.NewClient(t, newServer().NewTestHandler())
-	mcpxtest.AssertToolCount(t, client, 3)
+	client := hamrtest.NewClient(t, newServer().NewTestHandler())
+	hamrtest.AssertToolCount(t, client, 3)
 }
 
 // TestToolCall_ValidInput exercises a normal, successful tool call.
 func TestToolCall_ValidInput(t *testing.T) {
-	client := mcpxtest.NewClient(t, newServer().NewTestHandler())
+	client := hamrtest.NewClient(t, newServer().NewTestHandler())
 
 	result, err := client.CallTool("search", map[string]any{
 		"query": "mcpx framework",
@@ -106,7 +106,7 @@ func TestToolCall_ValidInput(t *testing.T) {
 
 // TestToolCall_DefaultsApplied checks that omitted fields are filled from defaults.
 func TestToolCall_DefaultsApplied(t *testing.T) {
-	client := mcpxtest.NewClient(t, newServer().NewTestHandler())
+	client := hamrtest.NewClient(t, newServer().NewTestHandler())
 
 	// Only supply the required "query" field; expect max_results=10 and format=text.
 	result, err := client.CallTool("search", map[string]any{
@@ -128,7 +128,7 @@ func TestToolCall_DefaultsApplied(t *testing.T) {
 // TestToolCall_MissingRequiredField verifies that omitting a required field
 // surfaces as a validation error (isError=true) rather than a panic or crash.
 func TestToolCall_MissingRequiredField(t *testing.T) {
-	client := mcpxtest.NewClient(t, newServer().NewTestHandler())
+	client := hamrtest.NewClient(t, newServer().NewTestHandler())
 
 	// "query" is required — omit it entirely.
 	result, err := client.CallTool("search", map[string]any{})
@@ -146,7 +146,7 @@ func TestToolCall_MissingRequiredField(t *testing.T) {
 
 // TestToolCall_WrongType passes a boolean where a string is expected.
 func TestToolCall_WrongType(t *testing.T) {
-	client := mcpxtest.NewClient(t, newServer().NewTestHandler())
+	client := hamrtest.NewClient(t, newServer().NewTestHandler())
 
 	result, err := client.CallTool("search", map[string]any{
 		"query":       true, // boolean, not string
@@ -162,7 +162,7 @@ func TestToolCall_WrongType(t *testing.T) {
 
 // TestToolCall_EnumViolation passes a value outside the declared enum.
 func TestToolCall_EnumViolation(t *testing.T) {
-	client := mcpxtest.NewClient(t, newServer().NewTestHandler())
+	client := hamrtest.NewClient(t, newServer().NewTestHandler())
 
 	result, err := client.CallTool("search", map[string]any{
 		"query":  "test",
@@ -178,7 +178,7 @@ func TestToolCall_EnumViolation(t *testing.T) {
 
 // TestToolCall_EnumValid verifies that a valid enum value is accepted.
 func TestToolCall_EnumValid(t *testing.T) {
-	client := mcpxtest.NewClient(t, newServer().NewTestHandler())
+	client := hamrtest.NewClient(t, newServer().NewTestHandler())
 
 	for _, format := range []string{"json", "text", "markdown"} {
 		format := format
@@ -199,7 +199,7 @@ func TestToolCall_EnumValid(t *testing.T) {
 
 // TestToolCall_StyleEnum verifies the "style" enum on the format tool.
 func TestToolCall_StyleEnum(t *testing.T) {
-	client := mcpxtest.NewClient(t, newServer().NewTestHandler())
+	client := hamrtest.NewClient(t, newServer().NewTestHandler())
 
 	result, err := client.CallTool("format", map[string]any{
 		"text":  "Hello World",
@@ -218,7 +218,7 @@ func TestToolCall_StyleEnum(t *testing.T) {
 
 // TestInitialize verifies the server handshake response.
 func TestInitialize(t *testing.T) {
-	client := mcpxtest.NewClient(t, newServer().NewTestHandler())
+	client := hamrtest.NewClient(t, newServer().NewTestHandler())
 
 	info := client.Initialize()
 	if info["protocolVersion"] == "" {
@@ -235,7 +235,7 @@ func TestInitialize(t *testing.T) {
 
 // TestToolDef_SchemaPresent verifies that each tool exposes an inputSchema.
 func TestToolDef_SchemaPresent(t *testing.T) {
-	client := mcpxtest.NewClient(t, newServer().NewTestHandler())
+	client := hamrtest.NewClient(t, newServer().NewTestHandler())
 	tools := client.ListTools()
 
 	for _, tool := range tools {

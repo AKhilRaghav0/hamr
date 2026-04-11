@@ -127,8 +127,8 @@ func kubectl(args ...string) (string, error) {
 }
 
 func main() {
-	s := mcpx.New("k8s-mcp", "1.0.0",
-		mcpx.WithDescription("Kubernetes cluster tools — pods, logs, resources, events"),
+	s := hamr.New("k8s-mcp", "1.0.0",
+		hamr.WithDescription("Kubernetes cluster tools — pods, logs, resources, events"),
 	)
 
 	s.Use(

@@ -26,7 +26,7 @@ func main() {
 		log.Fatalf("failed to create sandbox directory: %v", err)
 	}
 
-	s := mcpx.New("file-server", "1.0.0")
+	s := hamr.New("file-server", "1.0.0")
 
 	// AddTools registers all tools from a ToolCollection in one call.
 	// toolbox.FileSystem provides: read_file, write_file, list_dir, search_files.

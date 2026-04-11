@@ -1,6 +1,6 @@
 //go:build ignore
 
-// k8s-mcp-raw is the SAME k8s MCP server, written WITHOUT mcpx.
+// k8s-mcp-raw is the SAME k8s MCP server, written WITHOUT hamr.
 // Using the official github.com/modelcontextprotocol/go-sdk directly.
 //
 // Compare this with ../k8s-mcp/main.go to see the difference.

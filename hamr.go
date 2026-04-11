@@ -10,13 +10,13 @@
 //	}
 //
 //	func main() {
-//	    s := mcpx.New("my-server", "1.0.0")
+//	    s := hamr.New("my-server", "1.0.0")
 //	    s.Tool("search", "Search the web", func(ctx context.Context, input SearchInput) (string, error) {
 //	        return "results", nil
 //	    })
 //	    s.Run()
 //	}
-package mcpx
+package hamr
 
 import (
 	"context"
@@ -33,7 +33,7 @@ import (
 	"github.com/AKhilRaghav0/hamr/validate"
 )
 
-// Server is the central type in mcpx. It holds all registered tools, resources,
+// Server is the central type in hamr. It holds all registered tools, resources,
 // and prompts, manages global and per-tool middleware, and owns the transport
 // lifecycle.
 //
@@ -106,9 +106,9 @@ const (
 //
 // Example:
 //
-//	s := mcpx.New("my-server", "1.0.0",
-//	    mcpx.WithDescription("Does useful things"),
-//	    mcpx.WithLogger(myLogger),
+//	s := hamr.New("my-server", "1.0.0",
+//	    hamr.WithDescription("Does useful things"),
+//	    hamr.WithLogger(myLogger),
 //	)
 func New(name, version string, opts ...Option) *Server {
 	cfg := serverConfig{

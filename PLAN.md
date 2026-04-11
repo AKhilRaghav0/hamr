@@ -23,5 +23,5 @@ mcpx (public API)
 
 - Week 1: schema/ → validate/ → mcpx.go (core API) → transport/stdio
 - Week 2: middleware/ → transport/sse → cmd/mcpx init → cmd/mcpx validate
-- Week 3: tui/ → toolbox/ → mcpxtest/
+- Week 3: tui/ → toolbox/ → hamrtest/
 - Week 4: examples/ → README → docs → LAUNCH

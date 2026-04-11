@@ -21,9 +21,9 @@ func Database(db *sql.DB) *DatabaseTools {
 	return &DatabaseTools{db: db}
 }
 
-// Tools implements mcpx.ToolCollection.
-func (d *DatabaseTools) Tools() []mcpx.ToolInfo {
-	return []mcpx.ToolInfo{
+// Tools implements hamr.ToolCollection.
+func (d *DatabaseTools) Tools() []hamr.ToolInfo {
+	return []hamr.ToolInfo{
 		{
 			Name:        "query",
 			Description: "Execute a read-only SQL SELECT query and return the results as a formatted table.",

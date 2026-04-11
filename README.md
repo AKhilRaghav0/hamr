@@ -49,7 +49,7 @@ func Search(ctx context.Context, input SearchInput) (string, error) {
 }
 
 func main() {
-    s := mcpx.New("my-server", "1.0.0")
+    s := hamr.New("my-server", "1.0.0")
     s.Tool("search", "Search for information", Search)
     log.Fatal(s.Run())
 }
@@ -73,7 +73,7 @@ We built a [Kubernetes MCP server](examples/k8s-mcp) that lets Claude check pod 
 | Rate limiting | Build your own | `middleware.RateLimit(10)` |
 | SSE transport | Build an HTTP server | `s.RunSSE(":8080")` |
 | Live dashboard | Doesn't exist | `s.RunSSEWithDashboard(":8080")` |
-| Testing | Mock the entire protocol | `mcpxtest.NewClient(t, s)` |
+| Testing | Mock the entire protocol | `hamrtest.NewClient(t, s)` |
 
 The raw version is in [examples/k8s-mcp-raw](examples/k8s-mcp-raw) if you want to see for yourself. The business logic (the kubectl calls) is identical in both. The difference is purely the plumbing that hamr eliminates.
 
@@ -145,19 +145,19 @@ hamr also supports returning multiple content blocks or structured results:
 
 ```go
 // Return multiple content blocks (text + images, etc.)
-func FetchImage(ctx context.Context, in Input) ([]mcpx.Content, error) {
-    return []mcpx.Content{
-        mcpx.TextContent("Here's the image:"),
-        mcpx.ImageContent("image/png", base64Data),
+func FetchImage(ctx context.Context, in Input) ([]hamr.Content, error) {
+    return []hamr.Content{
+        hamr.TextContent("Here's the image:"),
+        hamr.ImageContent("image/png", base64Data),
     }, nil
 }
 
 // Return a Result with explicit error flag
-func Risky(ctx context.Context, in Input) (mcpx.Result, error) {
+func Risky(ctx context.Context, in Input) (hamr.Result, error) {
     if somethingFailed {
-        return mcpx.ErrorResult("it broke"), nil
+        return hamr.ErrorResult("it broke"), nil
     }
-    return mcpx.NewResult(mcpx.TextContent("it worked")), nil
+    return hamr.NewResult(hamr.TextContent("it worked")), nil
 }
 ```
 
@@ -166,7 +166,7 @@ func Risky(ctx context.Context, in Input) (mcpx.Result, error) {
 If you've used middleware in any HTTP framework, this is the same idea. Middleware wraps your tool handlers and runs before/after each call.
 
 ```go
-s := mcpx.New("server", "1.0.0")
+s := hamr.New("server", "1.0.0")
 
 // Global middleware — applies to all tools
 s.Use(
@@ -210,7 +210,7 @@ If you just want to get something running fast, hamr ships with ready-made tool 
 ```go
 import "github.com/AKhilRaghav0/hamr/toolbox"
 
-s := mcpx.New("my-server", "1.0.0")
+s := hamr.New("my-server", "1.0.0")
 s.AddTools(toolbox.FileSystem("/safe/path"))  // read_file, write_file, list_dir, search_files
 s.AddTools(toolbox.HTTP())                     // http_get, http_post, fetch_url
 s.AddTools(toolbox.Shell("/work/dir"))         // run_command (sandboxed)
@@ -226,10 +226,10 @@ hamr includes a test client that talks to your server in-memory. No network, no 
 
 ```go
 func TestSearch(t *testing.T) {
-    s := mcpx.New("test", "1.0.0")
+    s := hamr.New("test", "1.0.0")
     s.Tool("search", "Search", Search)
 
-    client := mcpxtest.NewClient(t, s.NewTestHandler())
+    client := hamrtest.NewClient(t, s.NewTestHandler())
 
     // Call a tool
     result, err := client.CallTool("search", map[string]any{
@@ -303,14 +303,14 @@ The k8s example is probably the most interesting. You point it at a cluster and 
 
 ```
 hamr/
-  mcpx.go            Public API — New(), Tool(), Resource(), Prompt(), Run()
+  hamr.go            Public API — New(), Tool(), Resource(), Prompt(), Run()
   schema/             Auto JSON Schema generation from Go types
   validate/           Input validation engine
   middleware/         Logger, Recovery, RateLimit, Auth, Timeout, Cache
   transport/          stdio and SSE (JSON-RPC 2.0)
   tui/                Live monitoring dashboard (Bubbletea)
   toolbox/            Pre-built tool collections
-  mcpxtest/           Test client for unit testing
+  hamrtest/           Test client for unit testing
   cmd/hamr/           CLI — init, validate, dev
   examples/           Working examples
 ```
