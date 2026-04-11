@@ -9,9 +9,9 @@ import (
 // CostStats contains estimated token usage for a single tool call.
 type CostStats struct {
 	ToolName       string
-	RequestTokens  int           // estimated from args
-	ResponseTokens int           // estimated from result
-	TotalTokens    int           // request + response
+	RequestTokens  int // estimated from args
+	ResponseTokens int // estimated from result
+	TotalTokens    int // request + response
 	Duration       time.Duration
 }
 
