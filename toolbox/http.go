@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	defaultHTTPTimeout     = 30 * time.Second
-	defaultMaxBodySize     = 1 << 20 // 1 MiB
+	defaultHTTPTimeout = 30 * time.Second
+	defaultMaxBodySize = 1 << 20 // 1 MiB
 )
 
 // httpConfig holds the configuration for HTTPTools.

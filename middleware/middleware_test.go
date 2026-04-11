@@ -414,9 +414,9 @@ func TestCache_DifferentArgsMissCacheAndDelegate(t *testing.T) {
 	mw := middleware.Cache(5 * time.Second)
 	handler := mw(countingHandler)
 
-	handler(context.Background(), "tool", map[string]any{"id": 1})   //nolint:errcheck
-	handler(context.Background(), "tool", map[string]any{"id": 2})   //nolint:errcheck
-	handler(context.Background(), "tool", map[string]any{"id": 1})   //nolint:errcheck // cache hit
+	handler(context.Background(), "tool", map[string]any{"id": 1}) //nolint:errcheck
+	handler(context.Background(), "tool", map[string]any{"id": 2}) //nolint:errcheck
+	handler(context.Background(), "tool", map[string]any{"id": 1}) //nolint:errcheck // cache hit
 
 	if callCount.Load() != 2 {
 		t.Errorf("expected 2 underlying calls (distinct args), got %d", callCount.Load())

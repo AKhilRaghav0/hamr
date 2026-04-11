@@ -12,7 +12,7 @@ type tokenBucket struct {
 	mu         sync.Mutex
 	tokens     float64
 	maxTokens  float64
-	refillRate float64    // tokens refilled per second (equal to maxTokens for a standard token bucket)
+	refillRate float64 // tokens refilled per second (equal to maxTokens for a standard token bucket)
 	lastRefill time.Time
 }
 

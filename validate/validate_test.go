@@ -530,8 +530,8 @@ func TestMultipleErrors(t *testing.T) {
 		"format", schema("type", "string", "enum", []any{"json", "xml"}),
 	)
 	d := data(
-		"limit", float64(0),   // violates minimum
-		"format", "yaml",      // violates enum
+		"limit", float64(0), // violates minimum
+		"format", "yaml", // violates enum
 		// "query" missing — required error
 	)
 	errs := Validate(s, d)

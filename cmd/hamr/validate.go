@@ -41,14 +41,14 @@ func warnMark() string  { return colYellow + "⚠" + colReset }
 
 // finding is a single validation result.
 type finding struct {
-	ok      bool   // true = pass, false = fail
-	warn    bool   // if !ok and warn = true, it is advisory only
+	ok      bool // true = pass, false = fail
+	warn    bool // if !ok and warn = true, it is advisory only
 	message string
 }
 
-func pass(msg string) finding             { return finding{ok: true, message: msg} }
-func fail(msg string) finding             { return finding{ok: false, message: msg} }
-func warn(msg string) finding             { return finding{ok: false, warn: true, message: msg} }
+func pass(msg string) finding { return finding{ok: true, message: msg} }
+func fail(msg string) finding { return finding{ok: false, message: msg} }
+func warn(msg string) finding { return finding{ok: false, warn: true, message: msg} }
 
 func runValidate(cmd *cobra.Command, args []string) error {
 	root := "."

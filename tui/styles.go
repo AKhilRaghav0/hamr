@@ -11,7 +11,7 @@ import "github.com/charmbracelet/lipgloss"
 // We intentionally avoid ANSI numbers to keep the palette consistent.
 const (
 	// Background tones
-	colorBase   = lipgloss.Color("#0d0f14") // near-black
+	colorBase    = lipgloss.Color("#0d0f14") // near-black
 	colorSurface = lipgloss.Color("#1a1d27") // card / pane bg
 	colorOverlay = lipgloss.Color("#252837") // highlighted row bg
 

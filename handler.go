@@ -18,14 +18,14 @@ type mcpHandler struct {
 const (
 	mcpProtocolVersion = "2024-11-05"
 
-	methodInitialize  = "initialize"
-	methodListTools   = "tools/list"
-	methodCallTool    = "tools/call"
-	methodListPrompts = "prompts/list"
-	methodGetPrompt   = "prompts/get"
-	methodListResources       = "resources/list"
-	methodReadResource        = "resources/read"
-	methodNotificationsInit   = "notifications/initialized"
+	methodInitialize        = "initialize"
+	methodListTools         = "tools/list"
+	methodCallTool          = "tools/call"
+	methodListPrompts       = "prompts/list"
+	methodGetPrompt         = "prompts/get"
+	methodListResources     = "resources/list"
+	methodReadResource      = "resources/read"
+	methodNotificationsInit = "notifications/initialized"
 )
 
 // HandleRequest processes incoming JSON-RPC requests.

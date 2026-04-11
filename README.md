@@ -4,7 +4,10 @@
   <p align="center">
     <a href="https://pkg.go.dev/github.com/AKhilRaghav0/hamr"><img src="https://pkg.go.dev/badge/github.com/AKhilRaghav0/hamr.svg" alt="Go Reference"></a>
     <a href="https://goreportcard.com/report/github.com/AKhilRaghav0/hamr"><img src="https://goreportcard.com/badge/github.com/AKhilRaghav0/hamr" alt="Go Report Card"></a>
+    <a href="https://github.com/AKhilRaghav0/hamr/actions/workflows/ci.yml"><img src="https://github.com/AKhilRaghav0/hamr/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+    <a href="https://github.com/AKhilRaghav0/hamr/releases/latest"><img src="https://img.shields.io/github/v/release/AKhilRaghav0/hamr?color=blue" alt="Release"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
+    <a href="https://github.com/AKhilRaghav0/hamr/wiki"><img src="https://img.shields.io/badge/docs-wiki-blueviolet" alt="Wiki"></a>
   </p>
 </p>
 

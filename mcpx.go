@@ -54,13 +54,13 @@ type Server struct {
 
 // toolDef holds the definition and handler for a registered tool.
 type toolDef struct {
-	Name        string
-	Description string
-	Schema      map[string]any
-	Handler     any            // the original user function
-	inputType   reflect.Type   // the input struct type
-	handlerVal  reflect.Value  // reflected handler
-	returnStyle returnStyle
+	Name            string
+	Description     string
+	Schema          map[string]any
+	Handler         any           // the original user function
+	inputType       reflect.Type  // the input struct type
+	handlerVal      reflect.Value // reflected handler
+	returnStyle     returnStyle
 	toolMiddlewares []middleware.Middleware
 }
 

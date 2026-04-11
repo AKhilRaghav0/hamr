@@ -22,10 +22,10 @@ const (
 	maxCallHistory = 100
 
 	// Column widths (in characters) for the call log table.
-	callTimeWidth  = 8  // "HH:MM:SS"
-	callToolWidth  = 14 // tool name, padded / truncated
-	callDurWidth   = 8  // "9999ms  "
-	callIconWidth  = 1  // "✓" / "✗"
+	callTimeWidth = 8  // "HH:MM:SS"
+	callToolWidth = 14 // tool name, padded / truncated
+	callDurWidth  = 8  // "9999ms  "
+	callIconWidth = 1  // "✓" / "✗"
 )
 
 // CallEntry records a single tool invocation.
@@ -53,8 +53,8 @@ type CallEntry struct {
 // It owns the ordered slice of entries and the current scroll offset.
 type callLog struct {
 	entries  []CallEntry // most-recent first
-	offset   int        // topmost visible row index
-	selected int        // focused row index (0 = newest)
+	offset   int         // topmost visible row index
+	selected int         // focused row index (0 = newest)
 	styles   Styles
 }
 
