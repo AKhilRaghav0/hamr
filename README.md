@@ -19,7 +19,7 @@ MCP (Model Context Protocol) lets AI assistants like Claude, Cursor, and Windsur
 
 The problem is that building an MCP server in Go means writing a ton of boilerplate. You have to manually define JSON schemas, handle JSON-RPC framing, parse and validate inputs, wire up transport, manage errors — and you end up with 200+ lines of ceremony before you even get to your actual logic.
 
-mcpx fixes that. You write a Go struct for your input, a function for your logic, and one line to register it. mcpx handles everything else — schema generation, validation, transport, middleware, the whole protocol. Your struct tags *are* your schema.
+hamr fixes that. You write a Go struct for your input, a function for your logic, and one line to register it. hamr handles everything else — schema generation, validation, transport, middleware, the whole protocol. Your struct tags *are* your schema.
 
 Think of it like [Cobra](https://github.com/spf13/cobra) but for MCP servers instead of CLI apps.
 
@@ -57,11 +57,11 @@ func main() {
 
 That's it. Build it, point Claude Desktop at the binary, and Claude can now call your search tool. The JSON schema gets generated from `SearchInput` automatically — the `desc` tag becomes the description, `default` sets the default value, `enum` restricts the allowed values. You never touch JSON schema by hand.
 
-## Why mcpx instead of writing it yourself?
+## Why hamr instead of writing it yourself?
 
 We built a [Kubernetes MCP server](examples/k8s-mcp) that lets Claude check pod status, read logs, describe resources, and monitor your cluster. Here's how the two approaches compare:
 
-| | Raw (no framework) | With mcpx |
+| | Raw (no framework) | With hamr |
 |---|---|---|
 | Total lines | ~480 (and only 3 of 6 tools) | 157 (all 6 tools) |
 | Lines to add a new tool | ~80 | ~15 |
@@ -75,7 +75,7 @@ We built a [Kubernetes MCP server](examples/k8s-mcp) that lets Claude check pod 
 | Live dashboard | Doesn't exist | `s.RunSSEWithDashboard(":8080")` |
 | Testing | Mock the entire protocol | `mcpxtest.NewClient(t, s)` |
 
-The raw version is in [examples/k8s-mcp-raw](examples/k8s-mcp-raw) if you want to see for yourself. The business logic (the kubectl calls) is identical in both. The difference is purely the plumbing that mcpx eliminates.
+The raw version is in [examples/k8s-mcp-raw](examples/k8s-mcp-raw) if you want to see for yourself. The business logic (the kubectl calls) is identical in both. The difference is purely the plumbing that hamr eliminates.
 
 ## Getting started
 
@@ -105,7 +105,7 @@ go get github.com/AKhilRaghav0/hamr
 
 ### Your struct tags define the schema
 
-Every tool in MCP needs a JSON Schema that tells the AI what arguments the tool accepts. With mcpx, you define a Go struct and the schema is generated automatically using reflection.
+Every tool in MCP needs a JSON Schema that tells the AI what arguments the tool accepts. With hamr, you define a Go struct and the schema is generated automatically using reflection.
 
 ```go
 type CreateFileInput struct {
@@ -141,7 +141,7 @@ func MyTool(ctx context.Context, input MyInput) (string, error) {
 }
 ```
 
-mcpx also supports returning multiple content blocks or structured results:
+hamr also supports returning multiple content blocks or structured results:
 
 ```go
 // Return multiple content blocks (text + images, etc.)
@@ -199,13 +199,13 @@ When you run with `RunSSEWithDashboard`, you get a live terminal dashboard that 
 
 This is the k8s-mcp example connected to a real Kubernetes cluster:
 
-![mcpx TUI Dashboard](assets/dashboard.png)
+![hamr TUI Dashboard](assets/dashboard.png)
 
 You can also run the devtools example with `--dashboard` to see it in action.
 
 ## Pre-built tool collections
 
-If you just want to get something running fast, mcpx ships with ready-made tool collections:
+If you just want to get something running fast, hamr ships with ready-made tool collections:
 
 ```go
 import "github.com/AKhilRaghav0/hamr/toolbox"
@@ -222,7 +222,7 @@ Each collection is sandboxed. The filesystem tools can't escape their root direc
 
 ## Testing your tools
 
-mcpx includes a test client that talks to your server in-memory. No network, no processes, no transport layer — just direct function calls with proper MCP protocol handling.
+hamr includes a test client that talks to your server in-memory. No network, no processes, no transport layer — just direct function calls with proper MCP protocol handling.
 
 ```go
 func TestSearch(t *testing.T) {
@@ -302,7 +302,7 @@ The k8s example is probably the most interesting. You point it at a cluster and 
 ## Project structure
 
 ```
-mcpx/
+hamr/
   mcpx.go            Public API — New(), Tool(), Resource(), Prompt(), Run()
   schema/             Auto JSON Schema generation from Go types
   validate/           Input validation engine
@@ -311,7 +311,7 @@ mcpx/
   tui/                Live monitoring dashboard (Bubbletea)
   toolbox/            Pre-built tool collections
   mcpxtest/           Test client for unit testing
-  cmd/mcpx/           CLI — init, validate, dev
+  cmd/hamr/           CLI — init, validate, dev
   examples/           Working examples
 ```
 
