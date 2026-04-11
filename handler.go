@@ -70,7 +70,7 @@ func (h *mcpHandler) HandleNotification(ctx context.Context, notif *transport.JS
 
 func (h *mcpHandler) handleInitialize(req *transport.JSONRPCRequest) *transport.JSONRPCResponse {
 	h.server.mu.RLock()
-	hasTools := len(h.server.tools) > 0
+	hasTools := len(h.server.tools) > 0 || len(h.server.toolGroups) > 0
 	hasPrompts := len(h.server.prompts) > 0
 	hasResources := len(h.server.resources) > 0
 	h.server.mu.RUnlock()

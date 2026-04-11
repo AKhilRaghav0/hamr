@@ -12,12 +12,20 @@ import (
 //
 // Only truncates string results. Non-string results (Content, Result) are
 // passed through unchanged since they may contain binary data.
+//
+// A maxTokens value of 0 or less disables truncation entirely (all responses
+// pass through unchanged). This avoids the degenerate case where every
+// non-empty response would be reduced to just the truncation message.
 func MaxResponseTokens(maxTokens int) Middleware {
 	maxChars := maxTokens * 4
 	return func(next HandlerFunc) HandlerFunc {
 		return func(ctx context.Context, toolName string, args map[string]any) (any, error) {
 			result, err := next(ctx, toolName, args)
 			if err != nil {
+				return result, err
+			}
+			// Disabled when maxTokens <= 0; avoids truncating everything to empty.
+			if maxChars <= 0 {
 				return result, err
 			}
 			// Only truncate string results.
