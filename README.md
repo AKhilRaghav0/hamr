@@ -1,4 +1,5 @@
 <p align="center">
+  <img src="assets/logo.png" alt="hamr" width="128" height="128">
   <h1 align="center">hamr</h1>
   <p align="center"><strong>The Go framework for building MCP servers.</strong><br>Stop writing protocol boilerplate. Start shipping tools.</p>
   <p align="center">
