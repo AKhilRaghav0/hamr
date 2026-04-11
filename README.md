@@ -322,6 +322,11 @@ hamr/
   examples/           Working examples
 ```
 
+## Community
+
+- [Reddit discussion](https://www.reddit.com/r/golang/comments/1sib0rh/i_got_tired_of_writing_300_lines_of_jsonrpc/) — the original post on r/golang
+- [Wiki](https://github.com/AKhilRaghav0/hamr/wiki) — full documentation
+
 ## Contributing
 
 We'd love contributions. The codebase is straightforward Go — no code generation, no magic, just reflection and struct tags.
