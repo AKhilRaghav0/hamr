@@ -6,10 +6,11 @@ import "log/slog"
 // The Server type (defined elsewhere) embeds or consumes this struct during
 // construction.
 type serverConfig struct {
-	logger      *slog.Logger
-	version     string
-	transport   string
-	description string
+	logger         *slog.Logger
+	version        string
+	transport      string
+	description    string
+	minimalSchemas bool
 }
 
 // Option is a functional option that configures a Server.
@@ -45,6 +46,16 @@ func WithTransport(transport string) Option {
 func WithDescription(desc string) Option {
 	return func(c *serverConfig) {
 		c.description = desc
+	}
+}
+
+// WithMinimalSchemas strips verbose schema fields (description, default, enum,
+// minimum, maximum, pattern, format) from the tools/list response to reduce
+// token usage when the AI reads the tool catalogue. Validation still uses the
+// full schema; only the wire representation is trimmed.
+func WithMinimalSchemas() Option {
+	return func(c *serverConfig) {
+		c.minimalSchemas = true
 	}
 }
 

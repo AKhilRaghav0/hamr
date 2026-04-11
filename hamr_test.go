@@ -1402,3 +1402,342 @@ func TestCallTool_InvalidCallParams(t *testing.T) {
 		t.Errorf("error code = %d, want CodeInvalidParams", resp.Error.Code)
 	}
 }
+
+// ---- TestMinimalSchemas -------------------------------------------------------
+
+// fullSchemaInput is a struct that exercises all schema annotation tags.
+type fullSchemaInput struct {
+	Query   string  `json:"query" desc:"search query" required:"true"`
+	Limit   int     `json:"limit" desc:"max results" default:"10" min:"1" max:"100"`
+	Mode    string  `json:"mode" desc:"search mode" enum:"fast,slow"`
+	Pattern string  `json:"pattern" desc:"regex filter" pattern:"^[a-z]+$"`
+	Score   float64 `json:"score" desc:"min score" default:"0.5"`
+}
+
+// TestMinimalSchemas verifies that WithMinimalSchemas strips description,
+// default, enum, minimum, maximum, pattern, and format fields from the
+// tools/list response schema.
+func TestMinimalSchemas(t *testing.T) {
+	s := New("minimal-server", "1.0.0", WithMinimalSchemas())
+	s.Tool("search", "Run a search", func(_ context.Context, in fullSchemaInput) (string, error) {
+		return "ok", nil
+	})
+	h := s.NewTestHandler()
+
+	resp := h.HandleRequest(context.Background(), &transport.JSONRPCRequest{
+		JSONRPC: "2.0",
+		ID:      100,
+		Method:  "tools/list",
+	})
+	if resp.Error != nil {
+		t.Fatalf("tools/list error: %v", resp.Error.Message)
+	}
+
+	result := resp.Result.(map[string]any)
+	data, _ := json.Marshal(result["tools"])
+	var tools []map[string]any
+	json.Unmarshal(data, &tools)
+	if len(tools) != 1 {
+		t.Fatalf("expected 1 tool, got %d", len(tools))
+	}
+
+	// Re-encode inputSchema to inspect it.
+	schemaData, _ := json.Marshal(tools[0]["inputSchema"])
+	var schema map[string]any
+	json.Unmarshal(schemaData, &schema)
+
+	// "type" and "properties" must still be present.
+	if schema["type"] != "object" {
+		t.Errorf("schema type = %v, want object", schema["type"])
+	}
+	propsRaw, ok := schema["properties"]
+	if !ok {
+		t.Fatal("schema missing 'properties'")
+	}
+	propsData, _ := json.Marshal(propsRaw)
+	var props map[string]any
+	json.Unmarshal(propsData, &props)
+
+	// Inspect the "query" property — should only have "type".
+	queryRaw, _ := json.Marshal(props["query"])
+	var queryProp map[string]any
+	json.Unmarshal(queryRaw, &queryProp)
+
+	stripped := []string{"description", "default", "enum", "minimum", "maximum", "pattern", "format"}
+	for _, field := range stripped {
+		for propName, propRaw := range props {
+			propData, _ := json.Marshal(propRaw)
+			var propSchema map[string]any
+			json.Unmarshal(propData, &propSchema)
+			if _, found := propSchema[field]; found {
+				t.Errorf("property %q should not have field %q in minimal schema", propName, field)
+			}
+		}
+	}
+}
+
+// TestMinimalSchemas_ValidationStillWorks verifies that even with
+// WithMinimalSchemas, validation uses the full schema (enum check still works).
+func TestMinimalSchemas_ValidationStillWorks(t *testing.T) {
+	s := New("minimal-validate-server", "1.0.0", WithMinimalSchemas())
+	s.Tool("search", "Run a search", func(_ context.Context, in fullSchemaInput) (string, error) {
+		return "ok", nil
+	})
+	h := s.NewTestHandler()
+
+	// Pass a value not in the enum — should fail validation.
+	resp := h.HandleRequest(context.Background(), &transport.JSONRPCRequest{
+		JSONRPC: "2.0",
+		ID:      101,
+		Method:  "tools/call",
+		Params: mustMarshal(map[string]any{
+			"name": "search",
+			"arguments": map[string]any{
+				"query": "hello",
+				"mode":  "turbo", // not in enum fast,slow
+			},
+		}),
+	})
+	if resp.Error != nil {
+		t.Fatalf("unexpected RPC error: %v", resp.Error.Message)
+	}
+	result := resp.Result.(map[string]any)
+	if isErr, _ := result["isError"].(bool); !isErr {
+		t.Error("isError should be true: enum validation must still fire with minimal schemas")
+	}
+}
+
+// ---- TestToolGroup -----------------------------------------------------------
+
+type groupToolInput struct {
+	Value string `json:"value" desc:"any value" required:"true"`
+}
+
+// TestToolGroup_ListShowsGroups verifies that ToolGroup entries appear in
+// tools/list as "group__<name>" selectors (no sub-tool schemas).
+func TestToolGroup_ListShowsGroups(t *testing.T) {
+	s := New("group-server", "1.0.0")
+	s.Tool("standalone", "A standalone tool", func(_ context.Context, in groupToolInput) (string, error) {
+		return in.Value, nil
+	})
+	s.ToolGroup("ops", "Database operations", func(g *Group) {
+		g.Tool("db_read", "Read from DB", func(_ context.Context, in groupToolInput) (string, error) {
+			return "read:" + in.Value, nil
+		})
+		g.Tool("db_write", "Write to DB", func(_ context.Context, in groupToolInput) (string, error) {
+			return "write:" + in.Value, nil
+		})
+	})
+	h := s.NewTestHandler()
+
+	resp := h.HandleRequest(context.Background(), &transport.JSONRPCRequest{
+		JSONRPC: "2.0",
+		ID:      110,
+		Method:  "tools/list",
+	})
+	if resp.Error != nil {
+		t.Fatalf("tools/list error: %v", resp.Error.Message)
+	}
+
+	result := resp.Result.(map[string]any)
+	data, _ := json.Marshal(result["tools"])
+	var tools []map[string]any
+	json.Unmarshal(data, &tools)
+
+	names := make(map[string]bool, len(tools))
+	for _, tool := range tools {
+		names[tool["name"].(string)] = true
+	}
+
+	if !names["standalone"] {
+		t.Error("standalone tool should be in tools/list")
+	}
+	if !names["group__ops"] {
+		t.Error("group selector group__ops should be in tools/list")
+	}
+	// Sub-tools must NOT appear directly.
+	if names["db_read"] {
+		t.Error("db_read should NOT appear directly in tools/list (it is inside a group)")
+	}
+	if names["db_write"] {
+		t.Error("db_write should NOT appear directly in tools/list (it is inside a group)")
+	}
+	// Only 2 entries: 1 standalone + 1 group selector.
+	if len(tools) != 2 {
+		t.Errorf("expected 2 tools/list entries (1 standalone + 1 group selector), got %d", len(tools))
+	}
+}
+
+// TestToolGroup_ExpandGroup verifies that calling group__<name> returns a
+// text listing of the group's tools.
+func TestToolGroup_ExpandGroup(t *testing.T) {
+	s := New("group-server", "1.0.0")
+	s.ToolGroup("ops", "Database operations", func(g *Group) {
+		g.Tool("db_read", "Read from DB", func(_ context.Context, in groupToolInput) (string, error) {
+			return "read:" + in.Value, nil
+		})
+	})
+	h := s.NewTestHandler()
+
+	resp := h.HandleRequest(context.Background(), &transport.JSONRPCRequest{
+		JSONRPC: "2.0",
+		ID:      111,
+		Method:  "tools/call",
+		Params:  mustMarshal(map[string]any{"name": "group__ops", "arguments": map[string]any{}}),
+	})
+	if resp.Error != nil {
+		t.Fatalf("unexpected RPC error: %v", resp.Error.Message)
+	}
+	result := resp.Result.(map[string]any)
+	if isErr, _ := result["isError"].(bool); isErr {
+		t.Error("isError should be false for group expansion")
+	}
+	data, _ := json.Marshal(result["content"])
+	var content []map[string]any
+	json.Unmarshal(data, &content)
+	if len(content) == 0 {
+		t.Fatal("expected content from group expansion")
+	}
+	text, _ := content[0]["text"].(string)
+	if text == "" {
+		t.Fatal("group expansion text must not be empty")
+	}
+	// The listing must mention the sub-tool.
+	if !containsStr(text, "db_read") {
+		t.Errorf("group expansion listing should mention db_read, got:\n%s", text)
+	}
+}
+
+// TestToolGroup_CallGroupedTool verifies that a tool inside a group can be
+// invoked directly by its real name.
+func TestToolGroup_CallGroupedTool(t *testing.T) {
+	s := New("group-server", "1.0.0")
+	s.ToolGroup("ops", "Database operations", func(g *Group) {
+		g.Tool("db_read", "Read from DB", func(_ context.Context, in groupToolInput) (string, error) {
+			return "read:" + in.Value, nil
+		})
+	})
+	h := s.NewTestHandler()
+
+	resp := h.HandleRequest(context.Background(), &transport.JSONRPCRequest{
+		JSONRPC: "2.0",
+		ID:      112,
+		Method:  "tools/call",
+		Params:  mustMarshal(map[string]any{"name": "db_read", "arguments": map[string]any{"value": "record-1"}}),
+	})
+	if resp.Error != nil {
+		t.Fatalf("unexpected RPC error: %v", resp.Error.Message)
+	}
+	result := resp.Result.(map[string]any)
+	if isErr, _ := result["isError"].(bool); isErr {
+		t.Error("isError should be false for grouped tool call")
+	}
+	data, _ := json.Marshal(result["content"])
+	var content []map[string]any
+	json.Unmarshal(data, &content)
+	if text, _ := content[0]["text"].(string); text != "read:record-1" {
+		t.Errorf("text = %q, want %q", text, "read:record-1")
+	}
+}
+
+// TestToolGroup_DuplicatePanics verifies that registering a group whose name
+// conflicts with an existing standalone tool panics.
+func TestToolGroup_DuplicatePanics(t *testing.T) {
+	s := New("group-server", "1.0.0")
+	s.Tool("ops", "Standalone ops tool", func(_ context.Context, in groupToolInput) (string, error) {
+		return in.Value, nil
+	})
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("expected panic when group name conflicts with standalone tool name")
+		}
+	}()
+
+	s.ToolGroup("ops", "Should panic", func(g *Group) {})
+}
+
+// TestToolGroup_DuplicateGroupPanics verifies that registering two groups with
+// the same name panics.
+func TestToolGroup_DuplicateGroupPanics(t *testing.T) {
+	s := New("group-server", "1.0.0")
+	s.ToolGroup("mygroup", "First group", func(g *Group) {})
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("expected panic for duplicate group name")
+		}
+	}()
+
+	s.ToolGroup("mygroup", "Second group", func(g *Group) {})
+}
+
+// TestToolGroup_ExpandUnknownGroup verifies that calling group__nonexistent
+// returns isError=true.
+func TestToolGroup_ExpandUnknownGroup(t *testing.T) {
+	s := New("group-server", "1.0.0")
+	h := s.NewTestHandler()
+
+	resp := h.HandleRequest(context.Background(), &transport.JSONRPCRequest{
+		JSONRPC: "2.0",
+		ID:      113,
+		Method:  "tools/call",
+		Params:  mustMarshal(map[string]any{"name": "group__nonexistent", "arguments": map[string]any{}}),
+	})
+	if resp.Error != nil {
+		t.Fatalf("unexpected RPC error: %v", resp.Error.Message)
+	}
+	result := resp.Result.(map[string]any)
+	if isErr, _ := result["isError"].(bool); !isErr {
+		t.Error("isError should be true for unknown group expansion")
+	}
+}
+
+// ---- TestEstimateSchemaTokens ------------------------------------------------
+
+func TestEstimateSchemaTokens(t *testing.T) {
+	s := New("token-server", "1.0.0")
+	s.Tool("echo", "Echo a message", func(_ context.Context, in echoInput) (string, error) {
+		return in.Message, nil
+	})
+	s.ToolGroup("ops", "Database operations", func(g *Group) {
+		g.Tool("db_read", "Read from DB", func(_ context.Context, in groupToolInput) (string, error) {
+			return in.Value, nil
+		})
+	})
+
+	estimates := s.EstimateSchemaTokens()
+
+	// Must contain entries for the standalone tool and the group selector.
+	if _, ok := estimates["echo"]; !ok {
+		t.Error("EstimateSchemaTokens should contain entry for standalone tool 'echo'")
+	}
+	if _, ok := estimates["group__ops"]; !ok {
+		t.Error("EstimateSchemaTokens should contain entry for group selector 'group__ops'")
+	}
+
+	// Grouped sub-tools should not appear as direct entries.
+	if _, ok := estimates["db_read"]; ok {
+		t.Error("EstimateSchemaTokens should not expose grouped sub-tool 'db_read' directly")
+	}
+
+	// Token estimates must be positive.
+	for name, tokens := range estimates {
+		if tokens <= 0 {
+			t.Errorf("EstimateSchemaTokens[%q] = %d, want > 0", name, tokens)
+		}
+	}
+}
+
+// containsStr is a test helper that checks whether s contains sub.
+func containsStr(s, sub string) bool {
+	return len(s) >= len(sub) && (s == sub || len(sub) == 0 ||
+		func() bool {
+			for i := 0; i <= len(s)-len(sub); i++ {
+				if s[i:i+len(sub)] == sub {
+					return true
+				}
+			}
+			return false
+		}())
+}

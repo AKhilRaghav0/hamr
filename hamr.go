@@ -46,10 +46,23 @@ type Server struct {
 	tools       map[string]*toolDef
 	resources   map[string]*resourceDef
 	prompts     map[string]*promptDef
+	toolGroups  map[string]*Group
 	middlewares []middleware.Middleware
 	mu          sync.RWMutex
 	logger      *slog.Logger
 	onCall      func(tool string, args map[string]any, duration time.Duration, err error) // optional callback
+}
+
+// Group is a named collection of related tools that are presented to AI clients
+// as a single opaque selector entry in tools/list. The AI calls the group
+// selector to receive a text listing of the grouped tools, then calls individual
+// tools by their real names. This reduces the upfront token cost when a server
+// has many tools.
+type Group struct {
+	name        string
+	description string
+	tools       map[string]*toolDef
+	server      *Server
 }
 
 // toolDef holds the definition and handler for a registered tool.
@@ -126,13 +139,14 @@ func New(name, version string, opts ...Option) *Server {
 	}
 
 	return &Server{
-		name:      name,
-		version:   version,
-		config:    cfg,
-		tools:     make(map[string]*toolDef),
-		resources: make(map[string]*resourceDef),
-		prompts:   make(map[string]*promptDef),
-		logger:    logger,
+		name:       name,
+		version:    version,
+		config:     cfg,
+		tools:      make(map[string]*toolDef),
+		resources:  make(map[string]*resourceDef),
+		prompts:    make(map[string]*promptDef),
+		toolGroups: make(map[string]*Group),
+		logger:     logger,
 	}
 }
 
@@ -162,6 +176,70 @@ func (s *Server) Tool(name, description string, handler any, mws ...middleware.M
 	}
 	s.tools[name] = td
 	return s
+}
+
+// ToolGroup creates a named group of related tools. fn is called immediately
+// with a *Group so that tools can be registered on it via Group.Tool. The group
+// appears in tools/list as a single selector entry whose name is "group__<name>".
+// Calling that selector returns a text listing of the tools inside the group
+// without exposing full schemas upfront.
+//
+// ToolGroup panics if name conflicts with any standalone tool name or with
+// another group name.
+func (s *Server) ToolGroup(name, description string, fn func(g *Group)) *Server {
+	g := &Group{
+		name:        name,
+		description: description,
+		tools:       make(map[string]*toolDef),
+		server:      s,
+	}
+	fn(g)
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if _, exists := s.tools[name]; exists {
+		panic(fmt.Sprintf("hamr: group name %q conflicts with an existing tool", name))
+	}
+	if _, exists := s.toolGroups[name]; exists {
+		panic(fmt.Sprintf("hamr: tool group %q already registered", name))
+	}
+	s.toolGroups[name] = g
+	return s
+}
+
+// Tool registers a tool inside this Group. It accepts the same handler
+// signatures as Server.Tool and the same optional per-tool middleware. Tool
+// panics if the handler is invalid, the name is empty or already taken
+// (anywhere on the server — standalone tools, other groups, or within this
+// group), or if the description is empty.
+func (g *Group) Tool(name, description string, handler any, mws ...middleware.Middleware) {
+	td := g.server.buildToolDef(name, description, handler)
+	td.toolMiddlewares = mws
+
+	g.server.mu.RLock()
+	_, standaloneExists := g.server.tools[name]
+	g.server.mu.RUnlock()
+
+	if standaloneExists {
+		panic(fmt.Sprintf("hamr: group tool %q conflicts with an existing standalone tool", name))
+	}
+
+	// Check other groups for the same name.
+	g.server.mu.RLock()
+	for gName, og := range g.server.toolGroups {
+		if _, exists := og.tools[name]; exists {
+			g.server.mu.RUnlock()
+			panic(fmt.Sprintf("hamr: group tool %q conflicts with a tool in group %q", name, gName))
+		}
+	}
+	g.server.mu.RUnlock()
+
+	if _, exists := g.tools[name]; exists {
+		panic(fmt.Sprintf("hamr: tool %q already registered in group %q", name, g.name))
+	}
+
+	g.tools[name] = td
 }
 
 // Resource registers a resource with the server. The uri uniquely identifies
@@ -386,6 +464,15 @@ func (s *Server) buildPromptDef(name, description string, handler any) *promptDe
 func (s *Server) invokeTool(ctx context.Context, name string, rawArgs json.RawMessage) (Result, error) {
 	s.mu.RLock()
 	td, ok := s.tools[name]
+	if !ok {
+		for _, g := range s.toolGroups {
+			if td2, found := g.tools[name]; found {
+				td = td2
+				ok = true
+				break
+			}
+		}
+	}
 	s.mu.RUnlock()
 
 	if !ok {
@@ -511,4 +598,39 @@ func (s *Server) ListTools() []toolDef {
 		tools = append(tools, *td)
 	}
 	return tools
+}
+
+// EstimateSchemaTokens returns a rough token estimate for each tool entry (and
+// group selector) that would appear in a tools/list response. The estimate is
+// computed by marshalling each entry to JSON and dividing the byte length by 4
+// (the standard tokens-per-byte heuristic for English/code text).
+//
+// The returned map keys are tool names (or "group__<name>" for group selectors).
+func (s *Server) EstimateSchemaTokens() map[string]int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	out := make(map[string]int, len(s.tools)+len(s.toolGroups))
+
+	for _, td := range s.tools {
+		entry := map[string]any{
+			"name":        td.Name,
+			"description": td.Description,
+			"inputSchema": td.Schema,
+		}
+		b, _ := json.Marshal(entry)
+		out[td.Name] = len(b) / 4
+	}
+
+	for _, g := range s.toolGroups {
+		entry := map[string]any{
+			"name":        "group__" + g.name,
+			"description": g.description + " (call this to see available operations)",
+			"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}},
+		}
+		b, _ := json.Marshal(entry)
+		out["group__"+g.name] = len(b) / 4
+	}
+
+	return out
 }

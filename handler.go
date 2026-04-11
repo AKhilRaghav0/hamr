@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/AKhilRaghav0/hamr/transport"
 )
@@ -108,12 +109,25 @@ func (h *mcpHandler) handleListTools(req *transport.JSONRPCRequest) *transport.J
 	h.server.mu.RLock()
 	defer h.server.mu.RUnlock()
 
-	tools := make([]map[string]any, 0, len(h.server.tools))
+	tools := make([]map[string]any, 0, len(h.server.tools)+len(h.server.toolGroups))
 	for _, td := range h.server.tools {
+		schema := td.Schema
+		if h.server.config.minimalSchemas {
+			schema = minifySchema(schema)
+		}
 		tools = append(tools, map[string]any{
 			"name":        td.Name,
 			"description": td.Description,
-			"inputSchema": td.Schema,
+			"inputSchema": schema,
+		})
+	}
+
+	// Add a selector entry for each group so the AI can expand it lazily.
+	for _, g := range h.server.toolGroups {
+		tools = append(tools, map[string]any{
+			"name":        "group__" + g.name,
+			"description": g.description + " (call this to see available operations)",
+			"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}},
 		})
 	}
 
@@ -124,6 +138,43 @@ func (h *mcpHandler) handleListTools(req *transport.JSONRPCRequest) *transport.J
 			"tools": tools,
 		},
 	}
+}
+
+// minifySchema returns a copy of schema with verbose annotation fields removed.
+// Kept fields: type, properties (recursively minified), required, items.
+// Stripped fields: description, default, enum, minimum, maximum, pattern, format.
+func minifySchema(schema map[string]any) map[string]any {
+	if schema == nil {
+		return nil
+	}
+	out := make(map[string]any, len(schema))
+
+	if v, ok := schema["type"]; ok {
+		out["type"] = v
+	}
+
+	if props, ok := schema["properties"].(map[string]any); ok {
+		minified := make(map[string]any, len(props))
+		for k, v := range props {
+			if propSchema, ok := v.(map[string]any); ok {
+				minified[k] = minifySchema(propSchema)
+			} else {
+				minified[k] = v
+			}
+		}
+		out["properties"] = minified
+	}
+
+	if v, ok := schema["required"]; ok {
+		out["required"] = v
+	}
+
+	// Recursively minify array items.
+	if items, ok := schema["items"].(map[string]any); ok {
+		out["items"] = minifySchema(items)
+	}
+
+	return out
 }
 
 func (h *mcpHandler) handleCallTool(ctx context.Context, req *transport.JSONRPCRequest) *transport.JSONRPCResponse {
@@ -138,6 +189,65 @@ func (h *mcpHandler) handleCallTool(ctx context.Context, req *transport.JSONRPCR
 			Error: &transport.RPCError{
 				Code:    transport.CodeInvalidParams,
 				Message: "invalid params for tools/call",
+			},
+		}
+	}
+
+	// Handle group selector calls: return a text listing of the group's tools.
+	if strings.HasPrefix(params.Name, "group__") {
+		groupName := strings.TrimPrefix(params.Name, "group__")
+		h.server.mu.RLock()
+		g, found := h.server.toolGroups[groupName]
+		h.server.mu.RUnlock()
+
+		if !found {
+			return &transport.JSONRPCResponse{
+				JSONRPC: "2.0",
+				ID:      req.ID,
+				Result: map[string]any{
+					"content": []map[string]any{
+						{"type": "text", "text": fmt.Sprintf("unknown group: %s", groupName)},
+					},
+					"isError": true,
+				},
+			}
+		}
+
+		var sb strings.Builder
+		sb.WriteString(fmt.Sprintf("Group %q — %s\n\nAvailable tools:\n", g.name, g.description))
+		for _, td := range g.tools {
+			sb.WriteString(fmt.Sprintf("\n- %s: %s\n", td.Name, td.Description))
+			// List required parameters with their types.
+			if props, ok := td.Schema["properties"].(map[string]any); ok {
+				required := map[string]bool{}
+				if req, ok := td.Schema["required"].([]any); ok {
+					for _, r := range req {
+						if s, ok := r.(string); ok {
+							required[s] = true
+						}
+					}
+				}
+				for pName, pVal := range props {
+					pSchema, _ := pVal.(map[string]any)
+					pType, _ := pSchema["type"].(string)
+					req := required[pName]
+					reqStr := "optional"
+					if req {
+						reqStr = "required"
+					}
+					sb.WriteString(fmt.Sprintf("    %s (%s, %s)\n", pName, pType, reqStr))
+				}
+			}
+		}
+
+		return &transport.JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result: map[string]any{
+				"content": []map[string]any{
+					{"type": "text", "text": sb.String()},
+				},
+				"isError": false,
 			},
 		}
 	}
