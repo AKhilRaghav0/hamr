@@ -12,7 +12,9 @@ If you're new here, start with the Getting Started guide and work through the pa
 
 3. **[Middleware](Middleware)** — How the middleware system works, what's built in, and how to write your own.
 
-4. **[Transport](Transport)** — stdio vs SSE, when to use which, and how the TUI dashboard works.
+4. **[Token Optimization](Token-Optimization)** — Tool groups, minimal schemas, response truncation, and cost tracking. How to make your MCP server cheaper to run.
+
+5. **[Transport](Transport)** — stdio vs SSE, when to use which, and how the TUI dashboard works.
 
 5. **[Toolbox](Toolbox)** — Pre-built tool collections (filesystem, HTTP, shell, git, database) and how to use them safely.
 
