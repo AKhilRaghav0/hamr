@@ -1,7 +1,7 @@
 <p align="center">
   <img src="assets/logo.png" alt="hamr" width="128" height="128">
   <h1 align="center">hamr</h1>
-  <p align="center"><strong>The Go framework for building MCP servers.</strong><br>Stop writing protocol boilerplate. Start shipping tools.</p>
+  <p align="center"><strong>Build MCP servers in Go. Optimized for token cost.</strong></p>
   <p align="center">
     <a href="https://pkg.go.dev/github.com/AKhilRaghav0/hamr"><img src="https://pkg.go.dev/badge/github.com/AKhilRaghav0/hamr.svg" alt="Go Reference"></a>
     <a href="https://goreportcard.com/report/github.com/AKhilRaghav0/hamr"><img src="https://goreportcard.com/badge/github.com/AKhilRaghav0/hamr" alt="Go Report Card"></a>
@@ -58,31 +58,31 @@ func main() {
 
 That's it. Build it, point Claude Desktop at the binary, and Claude can now call your search tool. The JSON schema gets generated from `SearchInput` automatically — the `desc` tag becomes the description, `default` sets the default value, `enum` restricts the allowed values. You never touch JSON schema by hand.
 
-## Why hamr instead of writing it yourself?
+## Why hamr instead of the official Go SDK?
 
-We built a [Kubernetes MCP server](examples/k8s-mcp) that lets Claude check pod status, read logs, describe resources, and monitor your cluster. Here's how the two approaches compare:
+The official MCP Go SDK (`github.com/modelcontextprotocol/go-sdk`) is the reference implementation, and it's the right choice if you need first-party support, output schemas, progress tracking, or StreamableHTTP as soon as the spec ships it. It will always be first to get new protocol features.
 
-| | Raw (no framework) | With hamr |
+hamr is a higher-level framework built on top of the same protocol. The tradeoff is ergonomics and token cost in exchange for some flexibility. Here's how they compare:
+
+| | Official go-sdk | hamr |
 |---|---|---|
-| Total lines | ~480 (and only 3 of 6 tools) | 157 (all 6 tools) |
-| Lines to add a new tool | ~80 | ~15 |
-| JSON Schema | Written by hand, per tool | Generated from struct tags |
-| Input validation | You write it or skip it | Automatic |
-| Default values | Manual `if x == 0` checks | `default:"50"` tag |
-| Panic recovery | Hope for the best | `middleware.Recovery()` |
-| Logging | `fmt.Println` or nothing | `middleware.Logger()` |
-| Rate limiting | Build your own | `middleware.RateLimit(10)` |
-| SSE transport | Build an HTTP server | `s.RunSSE(":8080")` |
-| Live dashboard | Doesn't exist | `s.RunSSEWithDashboard(":8080")` |
-| Testing | Mock the entire protocol | `hamrtest.NewClient(t, s)` |
+| Schema generation | Struct tags (`jsonschema`) | Struct tags (`desc`, `default`, `enum`, `min`, `max`, `pattern`) |
+| Handler signature | `func(ctx, *CallToolRequest, In) (*CallToolResult, Out, error)` | `func(ctx, In) (string, error)` |
+| Pre-built middleware | None shipped | Logger, Recovery, RateLimit, Auth, Timeout, Cache |
+| Tool groups (lazy loading) | No | Yes — AI sees groups, not 20 schemas at once |
+| Minimal schema mode | No | Yes — strip verbose fields, save tokens |
+| Response truncation | No | Yes — auto-cap large outputs |
+| Cost tracking | No | Yes — token estimates per tool call |
+| Toolbox collections | No | FileSystem, HTTP, Shell, Git, Database |
+| TUI dashboard | No | Live terminal monitoring |
+| CLI scaffolder | No | `hamr init my-server` |
+| Test client | InMemoryTransport | `hamrtest.NewClient(t, s)` |
+| Official backing | Yes | No |
+| Output schemas | Yes | No |
+| Progress tracking | Yes | No |
+| StreamableHTTP | Yes | Planned |
 
-The raw version is in [examples/k8s-mcp-raw](examples/k8s-mcp-raw) if you want to see for yourself. The business logic (the kubectl calls) is identical in both. The difference is purely the plumbing that hamr eliminates.
-
-### It saves tokens too
-
-This matters if you're using an AI to generate MCP servers (and you probably are). A 4-tool notes server is 145 lines with hamr vs 356 lines without. That's 60% fewer tokens for the AI to generate, and 60% fewer tokens for you to review. The struct-tag-as-schema approach means the AI doesn't have to generate JSON Schema by hand — it just writes a normal Go struct and the schema exists automatically. Less code generated = fewer mistakes = less back-and-forth.
-
-For teams building lots of MCP integrations, this adds up fast.
+If you're prototyping or shipping production MCP servers where token overhead matters, hamr's extra layer pays for itself. If you need the latest spec features or official support, use go-sdk directly.
 
 ## Getting started
 
@@ -209,6 +209,99 @@ This is the k8s-mcp example connected to a real Kubernetes cluster:
 ![hamr TUI Dashboard](assets/dashboard.png)
 
 You can also run the devtools example with `--dashboard` to see it in action.
+
+## Token optimization
+
+Every tool schema you register gets sent to the AI on each conversation turn. With a large server — say 20 tools with detailed schemas — that's hundreds of tokens spent before the AI has done anything useful. These features exist to control that cost.
+
+### Tool groups
+
+Instead of exposing all tools upfront, you can organize them into named groups. The AI sees the group names and descriptions first, and only loads the full schemas for the groups it actually needs.
+
+```go
+s := hamr.New("my-server", "1.0.0")
+
+// Register tools inside a named group
+s.Group("filesystem", "Read and write local files",
+    hamr.GroupTool("read_file", "Read a file", ReadFile),
+    hamr.GroupTool("write_file", "Write a file", WriteFile),
+    hamr.GroupTool("list_dir", "List directory contents", ListDir),
+)
+
+s.Group("database", "Query the database",
+    hamr.GroupTool("query", "Run a SELECT query", QueryDB),
+    hamr.GroupTool("list_tables", "List available tables", ListTables),
+)
+```
+
+The AI sees two tools instead of five. If the task doesn't touch the database, those three schemas are never loaded. On a 20-tool server, this can cut schema token overhead by 80% or more depending on what the AI actually uses.
+
+### WithMinimalSchemas
+
+Full JSON Schema includes `$schema` declarations, `additionalProperties`, format annotations, and other fields that are useful for validation but redundant when you're just telling an AI what arguments a tool takes. `WithMinimalSchemas` strips those fields before the schema is sent.
+
+```go
+s := hamr.New("my-server", "1.0.0",
+    hamr.WithMinimalSchemas(),
+)
+```
+
+No code changes to your tools. The schemas still work — they're just leaner. On a server with many tools, this typically saves 15–25% of schema tokens.
+
+### MaxResponseTokens
+
+Tool responses can be arbitrarily large. A `git log` over a big repo or a database query with thousands of rows can return tens of thousands of tokens that bloat the context window. `MaxResponseTokens` caps any single tool response before it reaches the AI.
+
+```go
+s.Tool("git_log", "Show commit history", GitLog,
+    hamr.MaxResponseTokens(500),
+)
+```
+
+If the response would exceed 500 tokens, hamr truncates it and appends a note explaining the truncation so the AI knows the output was cut. You can also set a server-wide default:
+
+```go
+s := hamr.New("my-server", "1.0.0",
+    hamr.WithDefaultMaxResponseTokens(1000),
+)
+```
+
+### CostTracker
+
+`CostTracker` attaches to a server and records estimated token usage per tool call — schema tokens sent to the AI, response tokens returned, and a running total. Useful for understanding where your context budget actually goes.
+
+```go
+tracker := hamr.NewCostTracker()
+s := hamr.New("my-server", "1.0.0",
+    hamr.WithCostTracker(tracker),
+)
+
+// After some calls...
+report := tracker.Report()
+fmt.Printf("Total estimated tokens: %d\n", report.TotalTokens)
+fmt.Printf("By tool:\n")
+for tool, usage := range report.ByTool {
+    fmt.Printf("  %s: %d schema + %d response\n", tool, usage.SchemaTokens, usage.ResponseTokens)
+}
+```
+
+These are estimates based on character counts, not exact BPE counts. They're useful for relative comparisons — figuring out which tools are expensive — not for billing.
+
+### EstimateSchemaTokens
+
+Before deploying a server, you can check how many tokens its schemas will consume on each call:
+
+```go
+s := hamr.New("my-server", "1.0.0")
+s.Tool("search", "Search for information", Search)
+s.Tool("create_file", "Create a file", CreateFile)
+// ... more tools
+
+estimate := s.EstimateSchemaTokens()
+fmt.Printf("Schema overhead per call: ~%d tokens\n", estimate)
+```
+
+This runs before `s.Run()`, so you can catch bloated schemas during development. If the number is high, reach for tool groups or `WithMinimalSchemas`.
 
 ## Pre-built tool collections
 
