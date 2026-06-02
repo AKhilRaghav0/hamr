@@ -135,7 +135,9 @@ func WithConfigFile(path string) Option {
 			c.description = f.Description
 		}
 		if f.MinimalSchemas {
-			c.minimalSchemas = f.MinimalSchemas
+			c.minimalSchemas = true
+		} else {
+			c.minimalSchemas = false
 		}
 
 		// Set the config file for hot-reload.

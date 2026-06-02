@@ -138,9 +138,14 @@ func New(name, version string, opts ...Option) *Server {
 		}))
 	}
 
+	v := cfg.version
+	if v == "" {
+		v = version
+	}
+
 	return &Server{
 		name:       name,
-		version:    version,
+		version:    v,
 		config:     cfg,
 		tools:      make(map[string]*toolDef),
 		resources:  make(map[string]*resourceDef),
@@ -283,6 +288,25 @@ func (s *Server) Prompt(name, description string, handler any) *Server {
 func (s *Server) Use(mws ...middleware.Middleware) *Server {
 	s.middlewares = append(s.middlewares, mws...)
 	return s
+}
+
+// reloadConfig reloads the server configuration from the config file and
+// environment variables, then updates the server's version, transport,
+// description, and minimalSchemas fields. This method is safe for concurrent
+// use; it acquires s.mu internally.
+func (s *Server) reloadConfig() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if err := reloadConfig(&s.config); err != nil {
+		return err
+	}
+
+	s.version = s.config.version
+	s.transport = s.config.transport
+	s.description = s.config.description
+	s.minimalSchemas = s.config.minimalSchemas
+	return nil
 }
 
 // AddTools registers all tools provided by a ToolCollection in a single call.

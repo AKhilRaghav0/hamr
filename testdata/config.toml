@@ -1,0 +1,4 @@
+version = "1.3.0"
+transport = "sse"
+description = "Test TOML config"
+minimalSchemas = true

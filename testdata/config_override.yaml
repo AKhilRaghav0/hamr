@@ -1,0 +1,4 @@
+version: "2.0.0"
+transport: "sse"
+description: "Hot-reload test config"
+minimalSchemas: false
