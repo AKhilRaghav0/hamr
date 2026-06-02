@@ -39,27 +39,27 @@ func Compression(opts ...CompressionOption) Middleware {
 		o(cfg)
 	}
 
-	return func(next HandlerFunc) HandlerFunc {
-		return func(ctx context.Context, toolName string, args map[string]any) (any, error) {
-			// Decompress any gzip-compressed values in args
-			decompressedArgs := make(map[string]any, len(args))
-			for k, v := range args {
-				if b, ok := v.([]byte); ok && len(b) >= 2 && b[0] == 0x1f && b[1] == 0x8b {
-					// Gzip magic number
-					gr, err := gzip.NewReader(bytes.NewReader(b))
-					if err != nil {
-						return nil, err
+		return func(next HandlerFunc) HandlerFunc {
+			return func(ctx context.Context, toolName string, args map[string]any) (any, error) {
+				// Decompress any gzip-compressed values in args
+				decompressedArgs := make(map[string]any, len(args))
+				for k, v := range args {
+					if b, ok := v.([]byte); ok && len(b) >= 2 && b[0] == 0x1f && b[1] == 0x8b {
+						// Gzip magic number
+						gr, err := gzip.NewReader(bytes.NewReader(b))
+						if err != nil {
+							return nil, err
+						}
+						decompressed, err := io.ReadAll(gr)
+						gr.Close()
+						if err != nil {
+							return nil, err
+						}
+						decompressedArgs[k] = decompressed
+					} else {
+						decompressedArgs[k] = v
 					}
-					defer gr.Close()
-					decompressed, err := io.ReadAll(gr)
-					if err != nil {
-						return nil, err
-					}
-					decompressedArgs[k] = decompressed
-				} else {
-					decompressedArgs[k] = v
 				}
-			}
 
 			result, err := next(ctx, toolName, decompressedArgs)
 			if err != nil {

@@ -72,51 +72,66 @@ func CircuitBreaker(opts ...CircuitBreakerOption) Middleware {
 	// Map of tool name to circuit breaker state.
 	var states sync.Map
 
-	return func(next HandlerFunc) HandlerFunc {
-		return func(ctx context.Context, toolName string, args map[string]any) (any, error) {
-			// Get or create the state for this tool.
-			val, _ := states.LoadOrStore(toolName, &circuitBreakerState{
-				timeout:   cfg.timeout,
-				maxFailures: cfg.maxFailures,
-			})
-			cb := val.(*circuitBreakerState)
-
-			cb.mu.Lock()
-			state := cb.state
-			if state == StateOpen {
-				// Check if timeout has elapsed to move to half-open.
-				if time.Since(cb.lastFailure) > cb.timeout {
-					cb.state = StateHalfOpen
-				} else {
-					cb.mu.Unlock()
-					return nil, ErrCircuitBreakerOpen
+		return func(next HandlerFunc) HandlerFunc {
+			return func(ctx context.Context, toolName string, args map[string]any) (any, error) {
+				// Get or create the state for this tool.
+				if val, ok := states.Load(toolName); ok {
+					cb := val.(*circuitBreakerState)
+					// Process with existing cb
+					return processCircuitBreaker(ctx, cb, next, toolName, args)
 				}
+				// Create new state
+				newCB := &circuitBreakerState{
+					timeout:   cfg.timeout,
+					maxFailures: cfg.maxFailures,
+				}
+				// Store if not present, or use existing if raced
+				if actual, loaded := states.LoadOrStore(toolName, newCB); loaded {
+					cb := actual.(*circuitBreakerState)
+					return processCircuitBreaker(ctx, cb, next, toolName, args)
+				}
+				cb := newCB
+				return processCircuitBreaker(ctx, cb, next, toolName, args)
 			}
-			cb.mu.Unlock()
-
-			// Call the next handler.
-			result, err := next(ctx, toolName, args)
-
-			cb.mu.Lock()
-			defer cb.mu.Unlock()
-			if err != nil {
-				// Increment failure count and possibly open the circuit.
-				cb.failures++
-				if cb.failures >= int(cb.maxFailures) {
-					cb.state = StateOpen
-					cb.lastFailure = time.Now()
-				}
-			} else {
-				// Success: reset failure count and close the circuit if in half-open.
-				if cb.state == StateHalfOpen {
-					cb.state = StateClosed
-					cb.failures = 0
-				} else if cb.state == StateClosed {
-					cb.failures = 0
-				}
-			}
-
-			return result, err
 		}
 	}
-}
+	
+	// processCircuitBreaker contains the core circuit breaker logic
+	func processCircuitBreaker(ctx context.Context, cb *circuitBreakerState, next HandlerFunc, toolName string, args map[string]any) (any, error) {
+		cb.mu.Lock()
+		state := cb.state
+		if state == StateOpen {
+			// Check if timeout has elapsed to move to half-open.
+			if time.Since(cb.lastFailure) > cb.timeout {
+				cb.state = StateHalfOpen
+			} else {
+				cb.mu.Unlock()
+				return nil, ErrCircuitBreakerOpen
+			}
+		}
+		cb.mu.Unlock()
+
+		// Call the next handler.
+		result, err := next(ctx, toolName, args)
+
+		cb.mu.Lock()
+		defer cb.mu.Unlock()
+		if err != nil {
+			// Increment failure count and possibly open the circuit.
+			cb.failures++
+			if cb.failures >= int(cb.maxFailures) {
+				cb.state = StateOpen
+				cb.lastFailure = time.Now()
+			}
+		} else {
+			// Success: reset failure count and close the circuit if in half-open.
+			if cb.state == StateHalfOpen {
+				cb.state = StateClosed
+				cb.failures = 0
+			} else if cb.state == StateClosed {
+				cb.failures = 0
+			}
+		}
+
+		return result, err
+	}
